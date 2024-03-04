@@ -1,4 +1,5 @@
 #include "ncorr.h"
+#include "DIC_3D.h"
 #define OUTPUT_GENERATE_VIDEO
 
 using namespace ncorr;
@@ -7,6 +8,9 @@ int main(int argc, char *argv[]) {
 	if (argc != 2) {
 		throw std::invalid_argument("Must have 1 command line input of either 'calculate' or 'load'");	
 	}
+
+	DIC_3D_Input dic_3d_input("3D_DIC_input.txt");
+	dic_3d_input.debug_print(std::cout);
 
 	std::string path_prefix = "";
 	// Initialize DIC and strain information ---------------//
@@ -36,7 +40,7 @@ int main(int argc, char *argv[]) {
 				               ROI2D(Image2D(path_prefix + "images/roi_full.png").get_gs() > 0.5),		// ROI
 					       4,                                         		// scalefactor
 					       INTERP::CUBIC_KEYS_PRECOMPUTE,			// Interpolation
-					       SUBREGION::CIRCLE,					// Subregion shape
+					       SUBREGION::SQUARE,					// Subregion shape
 					       35,     // in pixels!                                   		// Subregion radius
 					       8,                                         		// # of threads
 					       DIC_analysis_config::NO_UPDATE,				// DIC configuration for reference image updates
@@ -46,17 +50,19 @@ int main(int argc, char *argv[]) {
 		DIC_output = DIC_analysis(DIC_input);
 
 		// Convert DIC_output to Eulerian perspective
-		DIC_output = change_perspective(DIC_output, INTERP::QUINTIC_BSPLINE_PRECOMPUTE);
+		// DIC_output = change_perspective(DIC_output, INTERP::QUINTIC_BSPLINE_PRECOMPUTE);
 
 		// Set units of DIC_output (provide units/pixel)
 		DIC_output = set_units(DIC_output, "mm", 1.0);
 		
 		// Save outputs as binary
-                save(DIC_input, path_prefix + "save/DIC_input.bin");
-                save(DIC_output, path_prefix + "save/DIC_output.bin");
+                // save(DIC_input, path_prefix + "save/DIC_input.bin");
+                // save(DIC_output, path_prefix + "save/DIC_output.bin");
 	} else {
 		throw std::invalid_argument("Input of " + input + " is not recognized. Must be either 'calculate' or 'load'");	
-	}		
+	}	
+
+	std::cout<<"disps:"<<DIC_output.disps.size()<<std::endl;
         
 
 #ifdef OUTPUT_GENERATE_VIDEO

@@ -219,8 +219,8 @@ struct DIC_analysis_output final {
     ~DIC_analysis_output() noexcept = default;
     
     // Additional constructors -----------------------------------------------//    
-    DIC_analysis_output(const std::vector<Disp2D> &disps, PERSPECTIVE perspective_type, const std::string &units, double units_per_pixel) : 
-        disps(disps), perspective_type(perspective_type), units(units), units_per_pixel(units_per_pixel) { }
+    DIC_analysis_output(const std::vector<Disp2D> &disps, PERSPECTIVE perspective_type, const std::string &units, double units_per_pixel, double corr_coef = 1e6) : 
+        disps(disps), perspective_type(perspective_type), units(units), units_per_pixel(units_per_pixel), corr_coef(corr_coef) { }
     
     // Static factory methods ------------------------------------------------//
     static DIC_analysis_output load(std::ifstream&);
@@ -234,6 +234,7 @@ struct DIC_analysis_output final {
     PERSPECTIVE perspective_type;
     std::string units;
     double units_per_pixel;
+    double corr_coef = 1e6;
 };
 
 DIC_analysis_output DIC_analysis(const DIC_analysis_input&);

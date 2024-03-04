@@ -2003,7 +2003,7 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
     // image which is assumed to be the Lagrangian perspective.
     DIC_analysis_output DIC_output;
     DIC_output.disps.resize(DIC_input.imgs.size()-1);
-    DIC_output.perspective_type = PERSPECTIVE::LAGRANGIAN;
+    DIC_output.perspective_type = PERSPECTIVE::EULERIAN; //LAGRANGIAN;
     DIC_output.units = "pixels";
     DIC_output.units_per_pixel = 1.0;
             
@@ -2052,9 +2052,9 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
         // coefficient cutoff value; if it does, then update the reference image.
         Array2D<double> cc_values = disp_pair.second.get_array()(disp_pair.second.get_roi().get_mask());
         if (!cc_values.empty()) {
-            double selected_corrcoef = prctile(cc_values, DIC_input.prctile_corrcoef);
-            std::cout << "Selected correlation coefficient value: " << selected_corrcoef << ". Correlation coefficient update value: " << DIC_input.update_corrcoef << "." << std::endl;
-            if (selected_corrcoef > DIC_input.update_corrcoef) {
+            DIC_output.corr_coef = prctile(cc_values, DIC_input.prctile_corrcoef);
+            std::cout << "Selected correlation coefficient value: " << DIC_output.corr_coef << ". Correlation coefficient update value: " << DIC_input.update_corrcoef << "." << std::endl;
+            if (DIC_output.corr_coef > DIC_input.update_corrcoef) {
                 // Update the reference image index as well as the reference roi
                 ref_idx = cur_idx;
                 roi_ref = update(DIC_input.roi, DIC_output.disps[cur_idx-1], DIC_input.interp_type);
@@ -2066,7 +2066,7 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
     std::chrono::time_point<std::chrono::system_clock> end_analysis = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds_analysis = end_analysis - start_analysis;
     std::cout << std::endl << "Total DIC analysis time: " << elapsed_seconds_analysis.count() << "." << std::endl;
-        
+
     return DIC_output;
 }
 

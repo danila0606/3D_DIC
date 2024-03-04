@@ -1,6 +1,4 @@
 .vscode
 test/
 README.md
-build/
-my_test/build/
 my_test/bin/
