@@ -21,6 +21,8 @@ struct DIC_3D_Input {
 
             f >> roi_xy_min[0] >> roi_xy_min[1] >> roi_xy_max[0] >> roi_xy_max[1];
             f >> downsampling_factor;
+            f >> stack_h;
+            f >> image_extension;
         }
 
         f.close();
@@ -38,6 +40,8 @@ struct DIC_3D_Input {
         }
         os << "\n" << "roi_min: " << roi_xy_min[0] << ", " << roi_xy_min[1] << " ,roi_max: " << roi_xy_max[0] << ", " << roi_xy_max[1] << std::endl;
         os << "downsampling factor: " << downsampling_factor << std::endl;
+        os << "stack_h: " << stack_h << std::endl;
+        os << "image_extension: " << image_extension << std::endl;
     }
 
     size_t subset_size, subset_offset;
@@ -49,4 +53,6 @@ struct DIC_3D_Input {
     std::vector<size_t> times;
     std::array<size_t, 2> roi_xy_min, roi_xy_max;
     size_t downsampling_factor;
+    size_t stack_h;
+    std::string image_extension;
 };
