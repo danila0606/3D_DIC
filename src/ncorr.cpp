@@ -1526,7 +1526,7 @@ namespace details {
         // seed with the highest correlation coefficient is used in the 
         // analysis. The higher the number of seeds, the more robust (but slower)
         // the analysis will be.
-        difference_type num_redundant_seeds = 4; 
+        difference_type num_redundant_seeds = 1; // 4
         auto redundant_seeds = get_ROI_partition_diagram_seeds(get_ROI_partition_diagram(roi_reduced, num_redundant_seeds), roi_reduced, num_redundant_seeds);
         for (auto &region_seeds: redundant_seeds) {            
             // Must scale seed position
@@ -1535,6 +1535,7 @@ namespace details {
                         
         // Cycle over regions and perform RGDIC.
         Array2D<double> params_buf(10, 1); // buffer for nloptimizer
+
         for (difference_type region_idx = 0; region_idx < roi_reduced.size_regions(); ++region_idx) {              
             if (redundant_seeds[region_idx].empty()) {
                 // This region couldn't be seeded - most likely because it was 
@@ -2014,7 +2015,7 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
         // -------------------------------------------------------------------//
         // Perform RGDIC -----------------------------------------------------//
         // -------------------------------------------------------------------//
-        std::cout << std::endl << "Processing displacement field " << cur_idx << " of " << DIC_input.imgs.size() - 1 << "." << std::endl;
+        // std::cout << std::endl << "Processing displacement field " << cur_idx << " of " << DIC_input.imgs.size() - 1 << "." << std::endl;
         std::cout << "Reference image: " << DIC_input.imgs[ref_idx] << "." << std::endl;
         std::cout << "Current image: " << DIC_input.imgs[cur_idx] << "." << std::endl;
         
@@ -2031,9 +2032,9 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
                                DIC_input.cutoff_corrcoef,
                                DIC_input.debug);
         
-        std::chrono::time_point<std::chrono::system_clock> end_rgdic = std::chrono::system_clock::now();
-        std::chrono::duration<double> elapsed_seconds_rgdic = end_rgdic - start_rgdic;
-        std::cout << "Time: " << elapsed_seconds_rgdic.count() << "." << std::endl;
+        // std::chrono::time_point<std::chrono::system_clock> end_rgdic = std::chrono::system_clock::now();
+        // std::chrono::duration<double> elapsed_seconds_rgdic = end_rgdic - start_rgdic;
+        // std::cout << "Time: " << elapsed_seconds_rgdic.count() << "." << std::endl;
         // -------------------------------------------------------------------//
         // -------------------------------------------------------------------//
         // -------------------------------------------------------------------//

@@ -23,6 +23,8 @@ struct DIC_3D_Input {
             f >> downsampling_factor;
             f >> stack_h;
             f >> image_extension;
+            f >> ignore_1st_layer;
+            f >> backward_calculation;
         }
 
         f.close();
@@ -31,17 +33,19 @@ struct DIC_3D_Input {
     void debug_print(std::ostream& os) {
         os << "subset size: " << subset_size << ", " << "subset offset: " << subset_offset << std::endl;
         os << "z bounce: " << z_bounce << ", " << "z radius: " << z_radius << std::endl;
-        os << "images_folder: " << images_folder << std::endl;
-        os << "output_folder: " << output_folder << std::endl;
-        os << "image_name_prefix: " << image_name_prefix << " ,image_name_postfix: " << image_name_postfix << std::endl;
+        os << "images folder: " << images_folder << std::endl;
+        os << "outputmfolder: " << output_folder << std::endl;
+        os << "image name prefix: " << image_name_prefix << " ,image name postfix: " << image_name_postfix << std::endl;
         os << "times: ";
         for (size_t i = 0; i < times.size(); ++i) {
             os << times[i] << " ";
         }
-        os << "\n" << "roi_min: " << roi_xy_min[0] << ", " << roi_xy_min[1] << " ,roi_max: " << roi_xy_max[0] << ", " << roi_xy_max[1] << std::endl;
+        os << "\n" << "roi min: " << roi_xy_min[0] << ", " << roi_xy_min[1] << " ,roi max: " << roi_xy_max[0] << ", " << roi_xy_max[1] << std::endl;
         os << "downsampling factor: " << downsampling_factor << std::endl;
-        os << "stack_h: " << stack_h << std::endl;
-        os << "image_extension: " << image_extension << std::endl;
+        os << "stack height: " << stack_h << std::endl;
+        os << "image extension: " << image_extension << std::endl;
+        os << "ignore 1st_layer: " << ignore_1st_layer << std::endl;
+        os << "backward calculation: " << backward_calculation << std::endl;
     }
 
     size_t subset_size, subset_offset;
@@ -55,4 +59,6 @@ struct DIC_3D_Input {
     size_t downsampling_factor;
     size_t stack_h;
     std::string image_extension;
+    bool ignore_1st_layer;
+    bool backward_calculation;
 };

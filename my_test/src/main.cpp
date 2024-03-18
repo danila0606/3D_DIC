@@ -44,7 +44,6 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
         }
     }
 
-
     auto DIC_input = DIC_analysis_input(
                             imgs, 						  // Images
 				            ROI2D(ROI > 0.5),		      // ROI
@@ -94,22 +93,41 @@ int main(int argc, char *argv[]) {
 	dic_in.debug_print(std::cout);
 
     float coef_treshold = 0.15;
+    float wrong_coef_treshold = 0.30;
     float delta_coef_treshold = 0.01;
 
     size_t s_x = (dic_in.roi_xy_max[0] - dic_in.roi_xy_min[0] - dic_in.subset_size) / (dic_in.subset_offset) + 1;
     size_t s_y = (dic_in.roi_xy_max[1] - dic_in.roi_xy_min[1] - dic_in.subset_size) / (dic_in.subset_offset) + 1;
-    size_t s_z = dic_in.stack_h / dic_in.z_bounce + 1;
-
     size_t subset_number = s_x * s_y;
+
+    size_t s_z = dic_in.stack_h / dic_in.z_bounce + 1;
     std::vector<int> interesting_layers = range(0, dic_in.stack_h + 1, dic_in.z_bounce);
+
+    if (dic_in.ignore_1st_layer) {
+        s_z -= 1;
+        interesting_layers.erase(interesting_layers.begin());
+    }
+    
+    // DEBUG
+    s_z = 1;
+    interesting_layers = {17};
+    
     std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
     auto result_def = result_ref;
     std::vector<float> result_coefs(s_z * subset_number, size_t(-1));
 
+    auto stack_times = dic_in.times;
+    if (dic_in.backward_calculation) {
+        std::reverse(stack_times);
+    }
+    
     for (size_t idx = 0; idx < dic_in.times.size() - 1; idx++) {
         auto initial_z_guess = interesting_layers;
         size_t ref_image_stack_number = dic_in.times[idx];
         size_t def_image_stack_number = dic_in.times[idx + 1];
+
+        std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
+        std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
         
         for (size_t i = 0; i < s_y; ++i) {
             for (size_t p = 0; p < s_x; ++p) {
@@ -163,6 +181,9 @@ int main(int argc, char *argv[]) {
                         else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
                             break; 
                         }
+                        else if (best_coef < wrong_coef_treshold) {
+                            break;
+                        }
                             
                     }
 
@@ -188,6 +209,9 @@ int main(int argc, char *argv[]) {
                         else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
                             break;
                         }
+                        else if (best_coef < wrong_coef_treshold) {
+                            break;
+                        }
                     }
 
                     result_def[xyz_table_start + k_bounced] = {subset_center[0] + best_u, subset_center[1] + best_v, best_z};
@@ -197,6 +221,10 @@ int main(int argc, char *argv[]) {
 
             }
         }
+
+        std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
+        std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << ".\n" << std::endl;
 
         std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
         if (out_file_ref.is_open()) {

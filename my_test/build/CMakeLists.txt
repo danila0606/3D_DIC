@@ -10,7 +10,6 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 
 # Add executable
 ADD_EXECUTABLE(my_test ../src/main.cpp)
-# ADD_EXECUTABLE(my_test ../src/ncorr_test.cpp)
 
 # Set C++11 support
 set_property(TARGET my_test PROPERTY CXX_STANDARD 11)
