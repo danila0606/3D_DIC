@@ -25,9 +25,55 @@ std::vector<int> range(int start, int stop, int step)
 struct SubsetCorr {
     float u = 0., v = 0.;
     float coef = 1e6;
+    bool skipped = false;
 };
 
 using namespace ncorr;
+
+bool isValidPixel(int x, int y, int width, int height) {
+  return (x >= 0 && x < width && y >= 0 && y < height);
+}
+
+// Function to calculate the gradient magnitude at a pixel
+float calculateGradient(const std::vector<float>& image, int width, int height, int x, int y) {
+  float gx = 0.0, gy = 0.0;
+
+  const int SobelX[3][3] = {{ -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 }};
+  const int SobelY[3][3] = {{ -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 }};
+
+  for (int i = -1; i <= 1; ++i) {
+    for (int j = -1; j <= 1; ++j) {
+      int neighborX = x + i;
+      int neighborY = y + j;
+      if (isValidPixel(neighborX, neighborY, width, height)) {
+        gx += SobelX[i + 1][j + 1] * image[neighborY * width + neighborX];
+        gy += SobelY[i + 1][j + 1] * image[neighborY * width + neighborX];
+      }
+    }
+  }
+
+  return sqrt(gx * gx + gy * gy);
+}
+
+float calculateAverageGradient(const std::vector<float>& image, int width, int height,
+                               int startX, int startY, int endX, int endY) {
+  float sum = 0.0;
+  int numPixels = 0;
+
+  for (int y = startY; y < endY; ++y) {
+    for (int x = startX; x < endX; ++x) {
+      float gradient = calculateGradient(image, width, height, x, y);
+      sum += gradient;
+      numPixels++;
+    }
+  }
+
+  if (numPixels == 0) {
+    return 0.0;
+  }
+
+  return sum / numPixels;
+}
 
 SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& ref_image, 
                                 const std::string& def_image, std::array<size_t, 2> s_xy_min) {
@@ -36,8 +82,20 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
     imgs.push_back(ref_image);
     imgs.push_back(def_image);
 
-    size_t img_size = 2048;
-    auto ROI = Array2D<double>(img_size, img_size, 0.0);
+    cv::Mat ref_img = cv::imread(ref_image);
+    size_t img_size_x = ref_img.cols, img_size_y = ref_img.rows;
+    std::vector<float>ref_vec(ref_img.begin<float>(), ref_img.end<float>());
+
+    auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
+
+    // if (aver_grad < 0.001) {
+    //     std::cout << "Skip: " << "[" << s_xy_min[0] << ", " << s_xy_min[1] << "]" <<std::endl;
+    //     SubsetCorr res;
+    //     res.skipped = true;
+    //     return res;
+    // }
+
+    auto ROI = Array2D<double>(img_size_y, img_size_x, 0.0);
     for (size_t j = 0; j < dic_in.subset_size; ++j) {
         for (size_t i = 0; i < dic_in.subset_size; ++i) {
             ROI(s_xy_min[0] + i, s_xy_min[1] + j) = 1.0;
@@ -92,39 +150,36 @@ int main(int argc, char *argv[]) {
 	DIC_3D_Input dic_in(argv[1]);
 	dic_in.debug_print(std::cout);
 
-    float coef_treshold = 0.15;
-    float wrong_coef_treshold = 0.30;
-    float delta_coef_treshold = 0.01;
+    const float coef_treshold = 0.15;
+    const float delta_coef_treshold = 0.1 * coef_treshold;
+    // float wrong_coef_treshold = 0.20; //0.30
+    const float bad_coef = 1e6;
 
     size_t s_x = (dic_in.roi_xy_max[0] - dic_in.roi_xy_min[0] - dic_in.subset_size) / (dic_in.subset_offset) + 1;
     size_t s_y = (dic_in.roi_xy_max[1] - dic_in.roi_xy_min[1] - dic_in.subset_size) / (dic_in.subset_offset) + 1;
     size_t subset_number = s_x * s_y;
 
-    size_t s_z = dic_in.stack_h / dic_in.z_bounce + 1;
-    std::vector<int> interesting_layers = range(0, dic_in.stack_h + 1, dic_in.z_bounce);
-
-    if (dic_in.ignore_1st_layer) {
-        s_z -= 1;
-        interesting_layers.erase(interesting_layers.begin());
+    size_t s_z = 1;
+    std::vector<int> interesting_layers = {0};
+    if (!dic_in.is_2D_case) {
+        s_z = dic_in.stack_h / dic_in.z_bounce + 1;
+        interesting_layers = range(0, dic_in.stack_h + 1, dic_in.z_bounce);
     }
     
-    // DEBUG
-    s_z = 1;
-    interesting_layers = {17};
-    
+    std::vector<float> result_coefs(s_z * subset_number, size_t(-1));
     std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
     auto result_def = result_ref;
-    std::vector<float> result_coefs(s_z * subset_number, size_t(-1));
 
     auto stack_times = dic_in.times;
+
     if (dic_in.backward_calculation) {
-        std::reverse(stack_times);
+        std::reverse(stack_times.begin(), stack_times.end());
     }
-    
-    for (size_t idx = 0; idx < dic_in.times.size() - 1; idx++) {
+
+    for (size_t idx = 0; idx < stack_times.size() - 1; idx++) {
         auto initial_z_guess = interesting_layers;
-        size_t ref_image_stack_number = dic_in.times[idx];
-        size_t def_image_stack_number = dic_in.times[idx + 1];
+        size_t ref_image_stack_number = stack_times[idx];
+        size_t def_image_stack_number = stack_times[idx + 1];
 
         std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
         std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
@@ -147,12 +202,17 @@ int main(int argc, char *argv[]) {
 
                 for (auto k : interesting_layers) {
                     std::stringstream ref_z_str;
-                    ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
+                    if (!dic_in.is_2D_case) {
+                        ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
+                    }
                     auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
-
                     size_t k_bounced = k / dic_in.z_bounce;
 
                     result_ref[xyz_table_start + k_bounced] = {subset_center[0], subset_center[1], k};
+                    if (dic_in.ignore_1st_layer && (k == interesting_layers[0])) {
+                        result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
+                        result_coefs[xyz_table_start + k_bounced] = bad_coef;
+                    }
 
                     int init_z = initial_z_guess[k_bounced];
                     int search_z_min = k - dic_in.z_radius;
@@ -161,15 +221,17 @@ int main(int argc, char *argv[]) {
 
                     int search_z_max = k + dic_in.z_radius;
                     if (search_z_max >= dic_in.stack_h)
-                        search_z_max = dic_in.stack_h - 1;
+                        search_z_max = dic_in.stack_h - 1; // TODO: -1 is not necessary
 
-                    float best_coef = 1e6;
+                    float best_coef = bad_coef;
                     float best_u = 0., best_v = 0.;
                     int best_z = init_z;
 
                     for (int z = init_z; z < search_z_max + 1; ++z) {
                         std::stringstream def_z_str;
-                        def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                        if (!dic_in.is_2D_case) {
+                            def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                        }
                         auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
                         auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
                         if (res.coef <= best_coef) {
@@ -181,9 +243,9 @@ int main(int argc, char *argv[]) {
                         else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
                             break; 
                         }
-                        else if (best_coef < wrong_coef_treshold) {
-                            break;
-                        }
+                        // else if (best_coef < wrong_coef_treshold) {
+                        //     break;
+                        // }
                             
                     }
 
@@ -196,7 +258,9 @@ int main(int argc, char *argv[]) {
 
                     for (int z = init_z - 1; z >= search_z_min + 1; --z) {
                         std::stringstream def_z_str;
-                        def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                        if (!dic_in.is_2D_case) {
+                            def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                        }
                         auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
                         auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
 
@@ -209,9 +273,9 @@ int main(int argc, char *argv[]) {
                         else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
                             break;
                         }
-                        else if (best_coef < wrong_coef_treshold) {
-                            break;
-                        }
+                        // else if (best_coef < wrong_coef_treshold) {
+                        //     break;
+                        // }
                     }
 
                     result_def[xyz_table_start + k_bounced] = {subset_center[0] + best_u, subset_center[1] + best_v, best_z};

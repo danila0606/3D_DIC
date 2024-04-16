@@ -5,26 +5,38 @@ struct DIC_3D_Input {
 
     DIC_3D_Input(const std::string& filename) {
         std::ifstream f(filename, std::ios::in);
-        if (f.is_open()) {
-            f >> subset_size >> subset_offset;
-            f >> z_bounce >> z_radius;
-            f >> images_folder;
-            f >> output_folder;
-            f >> image_name_prefix >> image_name_postfix;
-            size_t times_count;
-            f >> times_count;
-            times.resize(times_count);
+        if (!f.is_open()) {
+            throw std::runtime_error("Can't open file " + filename + " !");
+        }
+        // f >> is_2D_case;
 
-            for (size_t i = 0; i < times_count; ++i) {
-                f >> times[i];
-            }
+        f >> subset_size >> subset_offset;
+        f >> z_bounce >> z_radius;
+        f >> images_folder;
+        f >> output_folder;
+        f >> image_name_prefix >> image_name_postfix;
+        size_t times_count;
+        f >> times_count;
+        times.resize(times_count);
 
-            f >> roi_xy_min[0] >> roi_xy_min[1] >> roi_xy_max[0] >> roi_xy_max[1];
-            f >> downsampling_factor;
-            f >> stack_h;
-            f >> image_extension;
-            f >> ignore_1st_layer;
-            f >> backward_calculation;
+        for (size_t i = 0; i < times_count; ++i) {
+            f >> times[i];
+        }
+
+        f >> roi_xy_min[0] >> roi_xy_min[1] >> roi_xy_max[0] >> roi_xy_max[1];
+        f >> downsampling_factor;
+        f >> stack_h;
+        f >> image_extension;
+        f >> ignore_1st_layer;
+        f >> backward_calculation;
+        f >> is_2D_case;
+
+        if (is_2D_case) {
+            ignore_1st_layer = false;
+            stack_h = 1;
+            z_bounce = 1;
+            z_radius = 0;
+            image_name_postfix = "";
         }
 
         f.close();
@@ -46,6 +58,7 @@ struct DIC_3D_Input {
         os << "image extension: " << image_extension << std::endl;
         os << "ignore 1st_layer: " << ignore_1st_layer << std::endl;
         os << "backward calculation: " << backward_calculation << std::endl;
+        os << "2D case: " << is_2D_case << std::endl;
     }
 
     size_t subset_size, subset_offset;
@@ -61,4 +74,5 @@ struct DIC_3D_Input {
     std::string image_extension;
     bool ignore_1st_layer;
     bool backward_calculation;
+    bool is_2D_case;
 };

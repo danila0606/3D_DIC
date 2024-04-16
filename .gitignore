@@ -1,5 +1,6 @@
 .vscode
 test/
 README.md
-my_test/bin/
+DIC_3D/bin/
 build/
+DIC_3D/build/
