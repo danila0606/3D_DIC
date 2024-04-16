@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
                     auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
                     size_t k_bounced = k / dic_in.z_bounce;
 
-                    result_ref[xyz_table_start + k_bounced] = {subset_center[0], subset_center[1], k};
+                    result_ref[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0]), static_cast<float>(subset_center[1]), static_cast<float>(k)};
                     if (dic_in.ignore_1st_layer && (k == interesting_layers[0])) {
                         result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
                         result_coefs[xyz_table_start + k_bounced] = bad_coef;
@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     if ((best_z > init_z || (init_z - 1) < 0) & (best_coef < coef_treshold)) {
-                        result_def[xyz_table_start + k_bounced] = {subset_center[0] + best_u, subset_center[1] + best_v, best_z};
+                        result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
                         result_coefs[xyz_table_start + k_bounced] = best_coef;
                         initial_z_guess[k_bounced] = best_z;
                         continue;
@@ -278,7 +278,7 @@ int main(int argc, char *argv[]) {
                         // }
                     }
 
-                    result_def[xyz_table_start + k_bounced] = {subset_center[0] + best_u, subset_center[1] + best_v, best_z};
+                    result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
                     result_coefs[xyz_table_start + k_bounced] = best_coef;
                     initial_z_guess[k_bounced] = best_z;
                 }
