@@ -3,6 +3,8 @@ import subprocess
 import pandas as pd
 import trackpy as tp
 import pims
+
+import json
   
 
 # Initialize the main window
@@ -262,14 +264,24 @@ def dic_save_settings():
   image_filenames = get_filenames(images_path_label_entry.get())
   _, image_extension = os.path.splitext(image_filenames[0])
   times = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get())
+  times = sorted(times)
   if (buttons_vals[2]) :
     stack_h = 1
   else :
     stack_hs = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get() + str(list(times)[0]) + images_name_postfix_label_entry.get())
     stack_h = max(list(stack_hs))
 
-  file = dic_settings_path_entry.get() + dic_settings_name_entry.get() + ".txt"
+  file = dic_settings_path_entry.get() + dic_settings_name_entry.get() + ".json"
   with open(file, 'w') as f:
+    # json.dump({
+    #   "Subset size": int(subset_size_label_entry.get()), \
+    #   "Subset offset": int(subset_offset_label_entry.get()), \
+    #   "Z spacing": int(z_spacing_label_entry.get()), \
+    #   "Z search": int(z_search_label_entry.get()), \
+    #   "Images path": images_path_label_entry.get(), \
+    #   "Z search": int(z_search_label_entry.get()), \        
+    # })
+
     f.write(subset_size_label_entry.get() + "\n")
     f.write(subset_offset_label_entry.get() + "\n")
     f.write(z_spacing_label_entry.get() + "\n")
