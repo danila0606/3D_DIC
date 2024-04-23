@@ -165,10 +165,6 @@ int main(int argc, char *argv[]) {
         s_z = dic_in.stack_h / dic_in.z_bounce + 1;
         interesting_layers = range(0, dic_in.stack_h + 1, dic_in.z_bounce);
     }
-    
-    std::vector<float> result_coefs(s_z * subset_number, size_t(-1));
-    std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
-    auto result_def = result_ref;
 
     auto stack_times = dic_in.times;
 
@@ -176,144 +172,159 @@ int main(int argc, char *argv[]) {
         std::reverse(stack_times.begin(), stack_times.end());
     }
 
+    std::vector<std::thread> threads(stack_times.size() - 1);
+
     for (size_t idx = 0; idx < stack_times.size() - 1; idx++) {
-        auto initial_z_guess = interesting_layers;
-        size_t ref_image_stack_number = stack_times[idx];
-        size_t def_image_stack_number = stack_times[idx + 1];
 
-        std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
-        std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
-        
-        for (size_t i = 0; i < s_y; ++i) {
-            for (size_t p = 0; p < s_x; ++p) {
-                size_t j = p;
-                if (i % 2 == 0)
-                    j = s_x - p - 1;
+        threads[idx] = std::thread([&](size_t ind) {
+            
+            auto initial_z_guess = interesting_layers;
+            size_t ref_image_stack_number = stack_times[ind];
+            size_t def_image_stack_number = stack_times[ind + 1];
 
-                std::array<size_t, 2> s_xy_min;
-                s_xy_min[0] = dic_in.roi_xy_min[0] + dic_in.subset_offset * j;
-                s_xy_min[1] = dic_in.roi_xy_min[1] + dic_in.subset_offset * i;
+            std::vector<float> result_coefs(s_z * subset_number, size_t(-1));
+            std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
+            auto result_def = result_ref;
 
-                std::array<size_t, 2> subset_center;
-                subset_center[0] = s_xy_min[0] + dic_in.subset_size / 2;
-                subset_center[1] = s_xy_min[1] + dic_in.subset_size / 2;
+            std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
+            std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
+            
+            for (size_t i = 0; i < s_y; ++i) {
+                for (size_t p = 0; p < s_x; ++p) {
+                    size_t j = p;
+                    if (i % 2 == 0)
+                        j = s_x - p - 1;
 
-                size_t xyz_table_start = i * (s_x * s_z) + j * s_z;
+                    std::array<size_t, 2> s_xy_min;
+                    s_xy_min[0] = dic_in.roi_xy_min[0] + dic_in.subset_offset * j;
+                    s_xy_min[1] = dic_in.roi_xy_min[1] + dic_in.subset_offset * i;
 
-                for (auto k : interesting_layers) {
-                    std::stringstream ref_z_str;
-                    if (!dic_in.is_2D_case) {
-                        ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
-                    }
-                    auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
-                    size_t k_bounced = k / dic_in.z_bounce;
+                    std::array<size_t, 2> subset_center;
+                    subset_center[0] = s_xy_min[0] + dic_in.subset_size / 2;
+                    subset_center[1] = s_xy_min[1] + dic_in.subset_size / 2;
 
-                    result_ref[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0]), static_cast<float>(subset_center[1]), static_cast<float>(k)};
-                    if (dic_in.ignore_1st_layer && (k == interesting_layers[0])) {
-                        result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
-                        result_coefs[xyz_table_start + k_bounced] = bad_coef;
-                    }
+                    size_t xyz_table_start = i * (s_x * s_z) + j * s_z;
 
-                    int init_z = initial_z_guess[k_bounced];
-                    int search_z_min = k - dic_in.z_radius;
-                    if (search_z_min < 0)
-                        search_z_min = 0;
-
-                    int search_z_max = k + dic_in.z_radius;
-                    if (search_z_max >= dic_in.stack_h)
-                        search_z_max = dic_in.stack_h - 1; // TODO: -1 is not necessary
-
-                    float best_coef = bad_coef;
-                    float best_u = 0., best_v = 0.;
-                    int best_z = init_z;
-
-                    for (int z = init_z; z < search_z_max + 1; ++z) {
-                        std::stringstream def_z_str;
+                    for (auto k : interesting_layers) {
+                        std::stringstream ref_z_str;
                         if (!dic_in.is_2D_case) {
-                            def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                            ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
                         }
-                        auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
-                        auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
-                        if (res.coef <= best_coef) {
-                            best_u = res.u;
-                            best_v = res.v;
-                            best_coef = res.coef;
-                            best_z = z;
-                        }
-                        else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
-                            break; 
-                        }
-                        // else if (best_coef < wrong_coef_treshold) {
-                        //     break;
-                        // }
-                            
-                    }
+                        auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
+                        size_t k_bounced = k / dic_in.z_bounce;
 
-                    if ((best_z > init_z || (init_z - 1) < 0) & (best_coef < coef_treshold)) {
+                        result_ref[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0]), static_cast<float>(subset_center[1]), static_cast<float>(k)};
+                        if (dic_in.ignore_1st_layer && (k == interesting_layers[0])) {
+                            result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
+                            result_coefs[xyz_table_start + k_bounced] = bad_coef;
+                        }
+
+                        int init_z = initial_z_guess[k_bounced];
+                        int search_z_min = k - dic_in.z_radius;
+                        if (search_z_min < 0)
+                            search_z_min = 0;
+
+                        int search_z_max = k + dic_in.z_radius;
+                        if (search_z_max >= dic_in.stack_h)
+                            search_z_max = dic_in.stack_h - 1; // TODO: -1 is not necessary
+
+                        float best_coef = bad_coef;
+                        float best_u = 0., best_v = 0.;
+                        int best_z = init_z;
+
+                        for (int z = init_z; z < search_z_max + 1; ++z) {
+                            std::stringstream def_z_str;
+                            if (!dic_in.is_2D_case) {
+                                def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                            }
+                            auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
+                            auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
+                            if (res.coef <= best_coef) {
+                                best_u = res.u;
+                                best_v = res.v;
+                                best_coef = res.coef;
+                                best_z = z;
+                            }
+                            else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
+                                break; 
+                            }
+                            // else if (best_coef < wrong_coef_treshold) {
+                            //     break;
+                            // }
+                                
+                        }
+
+                        if ((best_z > init_z || (init_z - 1) < 0) & (best_coef < coef_treshold)) {
+                            result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
+                            result_coefs[xyz_table_start + k_bounced] = best_coef;
+                            initial_z_guess[k_bounced] = best_z;
+                            continue;
+                        }
+
+                        for (int z = init_z - 1; z >= search_z_min + 1; --z) {
+                            std::stringstream def_z_str;
+                            if (!dic_in.is_2D_case) {
+                                def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                            }
+                            auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
+                            auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
+
+                            if (res.coef <= best_coef) {
+                                best_u = res.u;
+                                best_v = res.v;
+                                best_coef = res.coef;
+                                best_z = z;
+                            }
+                            else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
+                                break;
+                            }
+                            // else if (best_coef < wrong_coef_treshold) {
+                            //     break;
+                            // }
+                        }
+
                         result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
                         result_coefs[xyz_table_start + k_bounced] = best_coef;
                         initial_z_guess[k_bounced] = best_z;
-                        continue;
                     }
 
-                    for (int z = init_z - 1; z >= search_z_min + 1; --z) {
-                        std::stringstream def_z_str;
-                        if (!dic_in.is_2D_case) {
-                            def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
-                        }
-                        auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
-                        auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
-
-                        if (res.coef <= best_coef) {
-                            best_u = res.u;
-                            best_v = res.v;
-                            best_coef = res.coef;
-                            best_z = z;
-                        }
-                        else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
-                            break;
-                        }
-                        // else if (best_coef < wrong_coef_treshold) {
-                        //     break;
-                        // }
-                    }
-
-                    result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
-                    result_coefs[xyz_table_start + k_bounced] = best_coef;
-                    initial_z_guess[k_bounced] = best_z;
                 }
-
             }
-        }
 
-        std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
-        std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
-        std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << ".\n" << std::endl;
+            std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
+            std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
+            std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << ".\n" << std::endl;
 
-        std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
-        if (out_file_ref.is_open()) {
-            for (auto& xyz : result_ref) {
-                out_file_ref << xyz[0] << " " << xyz[1] << " " << xyz[2] << std::endl;   
+            std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
+            if (out_file_ref.is_open()) {
+                for (auto& xyz : result_ref) {
+                    out_file_ref << xyz[0] << " " << xyz[1] << " " << xyz[2] << std::endl;   
+                }
             }
-        }
-        out_file_ref.close();
+            out_file_ref.close();
 
-        std::ofstream out_file_def(dic_in.output_folder + "def_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
-        if (out_file_def.is_open()) {
-            for (auto& xyz : result_def) {
-                out_file_def << xyz[0] << " " << xyz[1] << " " << xyz[2] << std::endl;   
+            std::ofstream out_file_def(dic_in.output_folder + "def_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
+            if (out_file_def.is_open()) {
+                for (auto& xyz : result_def) {
+                    out_file_def << xyz[0] << " " << xyz[1] << " " << xyz[2] << std::endl;   
+                }
             }
-        }
-        out_file_def.close();
+            out_file_def.close();
 
-        std::ofstream out_file_coefs(dic_in.output_folder + "coefs_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
-        if (out_file_coefs.is_open()) {
-            for (auto& coef : result_coefs) {
-                out_file_coefs << coef << std::endl;   
+            std::ofstream out_file_coefs(dic_in.output_folder + "coefs_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
+            if (out_file_coefs.is_open()) {
+                for (auto& coef : result_coefs) {
+                    out_file_coefs << coef << std::endl;   
+                }
             }
-        }
-        out_file_coefs.close();
+            out_file_coefs.close();
+
+        }, idx);
     }
 
+    int k = 0;
+    for (size_t i = 0; i < threads.size(); ++i) {
+        threads[i].join();
+    }
   	return 0;
 }

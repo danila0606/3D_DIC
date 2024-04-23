@@ -262,6 +262,7 @@ def dic_save_settings():
   image_filenames = get_filenames(images_path_label_entry.get())
   _, image_extension = os.path.splitext(image_filenames[0])
   times = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get())
+  times = sorted(times)
   if (buttons_vals[2]) :
     stack_h = 1
   else :
