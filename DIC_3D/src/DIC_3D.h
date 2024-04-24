@@ -42,7 +42,7 @@ struct DIC_3D_Input {
         f.close();
     };
 
-    void debug_print(std::ostream& os) {
+    void debug_print(std::ostream& os) const {
         os << "subset size: " << subset_size << ", " << "subset offset: " << subset_offset << std::endl;
         os << "z bounce: " << z_bounce << ", " << "z radius: " << z_radius << std::endl;
         os << "images folder: " << images_folder << std::endl;

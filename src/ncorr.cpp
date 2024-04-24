@@ -1658,11 +1658,24 @@ std::pair<Disp2D, Data2D> RGDIC(const Array2D<double> &A_ref,
     Array2D<bool> A_vp(roi_reduced.height(), roi_reduced.width()); // Valid Points
     
     // Form threads 
-    std::vector<std::thread> threads(num_threads);
-    for (difference_type thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
-        threads[thread_idx] = std::thread(details::worker_RGDIC,
+    // std::vector<std::thread> threads(num_threads);
+    // for (difference_type thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+    //     threads[thread_idx] = std::thread(details::worker_RGDIC,
+    //                                       sr_nloptimizer,                                          // Send in copy of subregion nonlinear optimizer
+    //                                       roi_reduced.form_union(partition_diagram == thread_idx), // Dont use std::ref since r-value
+    //                                       scalefactor,
+    //                                       cutoff_corrcoef,
+    //                                       cutoff_delta_disp,
+    //                                       std::ref(A_v),
+    //                                       std::ref(A_u),
+    //                                       std::ref(A_cc),
+    //                                       std::ref(A_ap),
+    //                                       std::ref(A_vp));
+    // }
+
+    details::worker_RGDIC(
                                           sr_nloptimizer,                                          // Send in copy of subregion nonlinear optimizer
-                                          roi_reduced.form_union(partition_diagram == thread_idx), // Dont use std::ref since r-value
+                                          roi_reduced.form_union(partition_diagram == 0), // Dont use std::ref since r-value
                                           scalefactor,
                                           cutoff_corrcoef,
                                           cutoff_delta_disp,
@@ -1671,7 +1684,6 @@ std::pair<Disp2D, Data2D> RGDIC(const Array2D<double> &A_ref,
                                           std::ref(A_cc),
                                           std::ref(A_ap),
                                           std::ref(A_vp));
-    }
     
     // Debugging stuff -------------------------------------------------------//    
     if (debug) {
@@ -1721,9 +1733,9 @@ std::pair<Disp2D, Data2D> RGDIC(const Array2D<double> &A_ref,
     // -----------------------------------------------------------------------//
     
     // Join threads
-    for (difference_type thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
-        threads[thread_idx].join();
-    }    
+    // for (difference_type thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+    //     threads[thread_idx].join();
+    // }    
     // -----------------------------------------------------------------------//    
     // -----------------------------------------------------------------------//    
     // -----------------------------------------------------------------------//    
@@ -2016,8 +2028,8 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
         // Perform RGDIC -----------------------------------------------------//
         // -------------------------------------------------------------------//
         // std::cout << std::endl << "Processing displacement field " << cur_idx << " of " << DIC_input.imgs.size() - 1 << "." << std::endl;
-        std::cout << "Reference image: " << DIC_input.imgs[ref_idx] << "." << std::endl;
-        std::cout << "Current image: " << DIC_input.imgs[cur_idx] << "." << std::endl;
+        // std::cout << "Reference image: " << DIC_input.imgs[ref_idx] << "." << std::endl;
+        // std::cout << "Current image: " << DIC_input.imgs[cur_idx] << "." << std::endl;
         
         std::chrono::time_point<std::chrono::system_clock> start_rgdic = std::chrono::system_clock::now();
         
@@ -2054,7 +2066,7 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
         Array2D<double> cc_values = disp_pair.second.get_array()(disp_pair.second.get_roi().get_mask());
         if (!cc_values.empty()) {
             DIC_output.corr_coef = prctile(cc_values, DIC_input.prctile_corrcoef);
-            std::cout << "Selected correlation coefficient value: " << DIC_output.corr_coef << ". Correlation coefficient update value: " << DIC_input.update_corrcoef << "." << std::endl;
+            // std::cout << "Selected correlation coefficient value: " << DIC_output.corr_coef << ". Correlation coefficient update value: " << DIC_input.update_corrcoef << "." << std::endl;
             if (DIC_output.corr_coef > DIC_input.update_corrcoef) {
                 // Update the reference image index as well as the reference roi
                 ref_idx = cur_idx;
@@ -2066,7 +2078,7 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
     // End timer for entire analysis
     std::chrono::time_point<std::chrono::system_clock> end_analysis = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds_analysis = end_analysis - start_analysis;
-    std::cout << std::endl << "Total DIC analysis time: " << elapsed_seconds_analysis.count() << "." << std::endl;
+    // std::cout << std::endl << "Total DIC analysis time: " << elapsed_seconds_analysis.count() << "." << std::endl;
 
     return DIC_output;
 }
