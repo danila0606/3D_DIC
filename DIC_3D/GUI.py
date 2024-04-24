@@ -57,7 +57,7 @@ def show_dic_or_pt():
 
 def load_dic_settings():
   filetypes = (
-        ('text files', '*.txt'),
+        ('json', '*.json'),
         ('All files', '*.*')
     )
   directory = filedialog.askopenfilename(title="Select a File", filetypes=filetypes)
@@ -72,76 +72,71 @@ def load_dic_settings():
 
   if directory:
     with open(directory, 'r') as f:
-    
-      line = f.readline()
+      json_dic_set = json.load(f)
+
       subset_size_label_entry.delete(0, END)
-      subset_size_label_entry.insert(END, line.split())
-      line = f.readline()
+      subset_size_label_entry.insert(END, str(json_dic_set['Subset size']))
+
       subset_offset_label_entry.delete(0, END)
-      subset_offset_label_entry.insert(END, line.split())
-      line = f.readline()
+      subset_offset_label_entry.insert(END,  str(json_dic_set['Subset offset']))
+
       z_spacing_label_entry.delete(0, END)
-      z_spacing_label_entry.insert(END, line.split())
-      line = f.readline()
+      z_spacing_label_entry.insert(END,  str(json_dic_set['Z spacing']))
+
       z_search_label_entry.delete(0, END)
-      z_search_label_entry.insert(END, line.split())
-      line = f.readline()
+      z_search_label_entry.insert(END,  str(json_dic_set['Z search']))
+
       images_path_label_entry.delete(0, END)
-      images_path_label_entry.insert(END, line.split())
-      line = f.readline()
+      images_path_label_entry.insert(END, json_dic_set['Images path'])
+
       dic_results_path_entry.delete(0, END)
-      dic_results_path_entry.insert(END, line.split())
-      line = f.readline()
+      dic_results_path_entry.insert(END, json_dic_set['DIC Results'])
+
       images_name_prefix_label_entry.delete(0, END)
-      images_name_prefix_label_entry.insert(END, line.split())
-      line = f.readline()
+      images_name_prefix_label_entry.insert(END, json_dic_set['Images Time Prefix'])
+
       images_name_postfix_label_entry.delete(0, END)
-      images_name_postfix_label_entry.insert(END, line.split())
+      images_name_postfix_label_entry.insert(END, json_dic_set['Images Slice Postfix'])
       
-      f.readline()
-      f.readline()
-
-      line = f.readline()
       ROI_x_min_label_entry.delete(0, END)
-      ROI_x_min_label_entry.insert(END, line.split()[0])
+      ROI_x_min_label_entry.insert(END, str(json_dic_set['ROI x min']))
       ROI_y_min_label_entry.delete(0, END)
-      ROI_y_min_label_entry.insert(END, line.split()[1])
-      line = f.readline()
+      ROI_y_min_label_entry.insert(END, str(json_dic_set['ROI y min']))
       ROI_x_max_label_entry.delete(0, END)
-      ROI_x_max_label_entry.insert(END, line.split()[0])
+      ROI_x_max_label_entry.insert(END, str(json_dic_set['ROI x max']))
       ROI_y_max_label_entry.delete(0, END)
-      ROI_y_max_label_entry.insert(END, line.split()[1])
+      ROI_y_max_label_entry.insert(END, str(json_dic_set['ROI y max']))
       
-      line = f.readline()
       downsampling_label_entry.delete(0, END)
-      downsampling_label_entry.insert(END, line.split())
+      downsampling_label_entry.insert(END, str(json_dic_set['Downsampling']))
 
-      f.readline()
-      f.readline()
-
-      line = f.readline()
-      buttons_vals[0] = int(line.split()[0])
+      buttons_vals[0] = int(json_dic_set['Ignore first layer'])
       ignore_1st_layer_button.config(text=str(bool(buttons_vals[0])))
 
-      line = f.readline()
-      buttons_vals[1] = int(line.split()[0])
+      buttons_vals[1] = int(json_dic_set['Is Backward'])
       if (buttons_vals[1]) :
         button_text = "Backward"
       else :
         button_text = "Forward"
       backward_value_button.config(text=button_text)
 
-      line = f.readline()
-      buttons_vals[2] = int(line.split()[0])
+      buttons_vals[2] = int(json_dic_set['Is 2D'])
       if (buttons_vals[2]) :
         button_text = "2D"
       else :
         button_text = "3D"
       case_value_button.config(text=button_text)
 
+      # if 2D
+      if (buttons_vals[2]) :
+        z_spacing_label_entry.delete(0, END)
+        z_search_label_entry.delete(0, END)
+
+    f.close()
+
 def load_pt_settings():
   filetypes = (
-        ('text files', '*.txt'),
+        ('json', '*.json'),
         ('All files', '*.*')
     )
   directory = filedialog.askopenfilename(title="Select a File", filetypes=filetypes)
@@ -156,45 +151,55 @@ def load_pt_settings():
 
   if directory:
     with open(directory, 'r') as f:
+      json_dic_set = json.load(f)
       
-      line = f.readline()
       images_path_label_entry.delete(0, END)
-      images_path_label_entry.insert(END, line.split())
+      images_path_label_entry.insert(END, json_dic_set['Images path'])
 
-      line = f.readline()
       dic_results_path_entry.delete(0, END)
-      dic_results_path_entry.insert(END, line.split())
+      dic_results_path_entry.insert(END, json_dic_set['DIC Results'])
 
-      line = f.readline()
       locations_path_entry.delete(0, END)
-      locations_path_entry.insert(END, line.split())
+      locations_path_entry.insert(END, json_dic_set['Locations path'])
 
-      line = f.readline()
       pt_results_path_entry.delete(0, END)
-      pt_results_path_entry.insert(END, line.split())
+      pt_results_path_entry.insert(END, json_dic_set['PT Results'])
 
-      line = f.readline()
       images_name_prefix_label_entry.delete(0, END)
-      images_name_prefix_label_entry.insert(END, line.split())
-      line = f.readline()
+      images_name_prefix_label_entry.insert(END, json_dic_set['Images Time Prefix'])
+
       images_name_postfix_label_entry.delete(0, END)
-      images_name_postfix_label_entry.insert(END, line.split())
+      images_name_postfix_label_entry.insert(END, json_dic_set['Images Slice Postfix'])
 
-      line = f.readline()
       scale_x_size_label_entry.delete(0, END)
-      scale_x_size_label_entry.insert(END, line.split())
-
-      line = f.readline()
+      scale_x_size_label_entry.insert(END, str(json_dic_set['Scale x']))
       scale_y_size_label_entry.delete(0, END)
-      scale_y_size_label_entry.insert(END, line.split())
-
-      line = f.readline()
+      scale_y_size_label_entry.insert(END, str(json_dic_set['Scale y']))
       scale_z_size_label_entry.delete(0, END)
-      scale_z_size_label_entry.insert(END, line.split())
+      scale_z_size_label_entry.insert(END, str(json_dic_set['Scale z']))
 
-      line = f.readline()
       pt_search_range_label_entry.delete(0, END)
-      pt_search_range_label_entry.insert(END, line.split())
+      pt_search_range_label_entry.insert(END, str(json_dic_set['PT search range']))
+
+      buttons_vals[1] = int(json_dic_set['Is Backward'])
+      if (buttons_vals[1]) :
+        button_text = "Backward"
+      else :
+        button_text = "Forward"
+      backward_value_button.config(text=button_text)
+
+      buttons_vals[2] = int(json_dic_set['Is 2D'])
+      if (buttons_vals[2]) :
+        button_text = "2D"
+      else :
+        button_text = "3D"
+      case_value_button.config(text=button_text)
+
+      # if 2D
+      if (buttons_vals[2]) :
+        scale_z_size_label_entry.delete(0, END)
+
+    f.close()
       
 
 
@@ -204,109 +209,90 @@ def dic_save_settings():
   if(images_path_label_entry.get() == "") :
     show_error("Images path is empty!")
     return
-  
   if(dic_results_path_entry.get() == "") :
     show_error("Results path is empty!")
     return
-  
   if(dic_settings_path_entry.get() == "") :
     show_error("Settins path is empty!")
     return
-  
   if(dic_settings_name_entry.get() == "") :
     show_error("Settins name is empty!")
     return
-  
   if(subset_size_label_entry.get() == "") :
     show_error("Subset size is empty!")
     return
-  
   if(subset_offset_label_entry.get() == "") :
     show_error("Subset offset is empty!")
     return
-  
-  if(z_search_label_entry.get() == "") :
-    show_error("z-search radius is empty!")
-    return
-  
-  if(z_spacing_label_entry.get() == "") :
-    show_error("z-spacing is empty!")
-    return
-  
   if(downsampling_label_entry.get() == "") :
     show_error("downsampling is empty!")
     return
-  
   if(ROI_x_min_label_entry.get() == "") :
     show_error("ROI x_min is empty!")
     return
-  
   if(ROI_y_min_label_entry.get() == "") :
     show_error("ROI y_min is empty!")
     return
-  
   if(ROI_x_max_label_entry.get() == "") :
     show_error("ROI x_max is empty!")
     return
-  
   if(ROI_y_max_label_entry.get() == "") :
     show_error("ROI y_max is empty!")
     return
-  
   if(images_name_prefix_label_entry.get() == "") :
     show_error("Images' name prefix is empty!")
-    return
-  
-  if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 0) :
-    show_error("Images' name postfix is empty!")
     return
   
   image_filenames = get_filenames(images_path_label_entry.get())
   _, image_extension = os.path.splitext(image_filenames[0])
   times = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get())
   times = sorted(times)
-  if (buttons_vals[2]) :
-    stack_h = 1
-  else :
+
+  if not (buttons_vals[2]):
+    if(z_search_label_entry.get() == "") :
+      show_error("z-search radius is empty!")
+      return
+    if(z_spacing_label_entry.get() == "") :
+      show_error("z-spacing is empty!")
+      return
+    if(images_name_postfix_label_entry.get() == "") :
+      show_error("Images' name postfix is empty!")
+      return
+    
     stack_hs = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get() + str(list(times)[0]) + images_name_postfix_label_entry.get())
     stack_h = max(list(stack_hs))
+    z_spacing = int(z_spacing_label_entry.get())
+    z_search = int(z_search_label_entry.get())
+  else :
+    stack_h = 1
+    z_spacing = -1
+    z_search = -1
 
   file = dic_settings_path_entry.get() + dic_settings_name_entry.get() + ".json"
   with open(file, 'w') as f:
-    # json.dump({
-    #   "Subset size": int(subset_size_label_entry.get()), \
-    #   "Subset offset": int(subset_offset_label_entry.get()), \
-    #   "Z spacing": int(z_spacing_label_entry.get()), \
-    #   "Z search": int(z_search_label_entry.get()), \
-    #   "Images path": images_path_label_entry.get(), \
-    #   "Z search": int(z_search_label_entry.get()), \        
-    # })
-
-    f.write(subset_size_label_entry.get() + "\n")
-    f.write(subset_offset_label_entry.get() + "\n")
-    f.write(z_spacing_label_entry.get() + "\n")
-    f.write(z_search_label_entry.get() + "\n")
-    f.write(images_path_label_entry.get() + "\n")
-    f.write(dic_results_path_entry.get() + "\n")
-    f.write(images_name_prefix_label_entry.get() + "\n")
-    if (buttons_vals[2]) :
-      f.write("EMPTY" + "\n")
-    else:
-      f.write(images_name_postfix_label_entry.get() + "\n")
-    f.write(str(len(times)) + "\n")
-    for number in times :
-      f.write(str(number) + " ")
-    f.write("\n")
-    f.write(ROI_x_min_label_entry.get() + " ")
-    f.write(ROI_y_min_label_entry.get() + "\n")
-    f.write(ROI_x_max_label_entry.get() + " ")
-    f.write(ROI_y_max_label_entry.get() + "\n")
-    f.write(downsampling_label_entry.get() + "\n")
-    f.write(str(stack_h) + "\n")
-    f.write(image_extension + "\n")
-    f.write(str(buttons_vals[0]) + "\n")
-    f.write(str(buttons_vals[1]) + "\n")
-    f.write(str(buttons_vals[2]) + "\n")
+    json.dump({
+      "Subset size": int(subset_size_label_entry.get()), 
+      "Subset offset": int(subset_offset_label_entry.get()), 
+      "Z spacing": z_spacing, 
+      "Z search": z_search, 
+      "Images path": images_path_label_entry.get(), 
+      "DIC Results": dic_results_path_entry.get(), 
+      "Images Time Prefix": images_name_prefix_label_entry.get(),   
+      "Images Slice Postfix": images_name_postfix_label_entry.get(), 
+      "Times": times, 
+      "ROI x min": int(ROI_x_min_label_entry.get()), 
+      "ROI y min": int(ROI_y_min_label_entry.get()), 
+      "ROI x max": int(ROI_x_max_label_entry.get()), 
+      "ROI y max": int(ROI_y_max_label_entry.get()), 
+      "Downsampling": int(downsampling_label_entry.get()), 
+      "Stack height": int(stack_h), 
+      "Image extension": image_extension, 
+      "Is 2D" : int(buttons_vals[2]), 
+      "Is Backward" : int(buttons_vals[1]), 
+      "Ignore first layer" : int(buttons_vals[0])
+    }, f, indent=2)
+  
+  f.close()
 
 def pt_save_settings():
   print("Saving current settings...")
@@ -314,150 +300,119 @@ def pt_save_settings():
   if(images_path_label_entry.get() == "") :
     show_error("Images path is empty!")
     return
-  
   if(dic_results_path_entry.get() == "") :
     show_error("DIC results path is empty!")
     return
-  
   if(locations_path_entry.get() == "") :
     show_error("Particles' locations path is empty!")
     return
-  
   if(pt_results_path_entry.get() == "") :
     show_error("Results path is empty!")
     return
-  
   if(pt_settings_path_entry.get() == "") :
     show_error("Settins path is empty!")
     return
-  
   if(pt_settings_name_entry.get() == "") :
     show_error("Settins name is empty!")
     return
-  
   if(scale_x_size_label_entry.get() == "") :
     show_error("Scale x is empty!")
     return
-  
   if(scale_y_size_label_entry.get() == "") :
     show_error("Scale y is empty!")
     return
-  
-  if(scale_z_size_label_entry.get() == "") :
-    show_error("Scale z is empty!")
-    return
-  
-  if(scale_z_size_label_entry.get() == "") :
-    show_error("Scale z is empty!")
-    return
-  
   if(pt_search_range_label_entry.get() == "") :
     show_error("PT seacrh range is empty!")
     return
-  
   if(images_name_prefix_label_entry.get() == "") :
     show_error("Images' name prefix is empty!")
     return
-  
-  # if(images_name_postfix_label_entry.get() == "") :
-  #   show_error("Images' name postfix is empty!")
-  #   return
+  #if not 2D
+  if not (buttons_vals[2]) :
+    if(scale_z_size_label_entry.get() == "") :
+      show_error("Scale z is empty!")
+      return
+    if(images_name_postfix_label_entry.get() == "") :
+      show_error("Images' name postfix is empty!")
+      return
+    scale_z = int(scale_z_size_label_entry.get())
+  else :
+    scale_z = -1
 
-  file = pt_settings_path_entry.get() + pt_settings_name_entry.get() + ".txt"
+  file = pt_settings_path_entry.get() + pt_settings_name_entry.get() + ".json"
   with open(file, 'w') as f:
-    f.write(images_path_label_entry.get() + "\n")
-    f.write(dic_results_path_entry.get() + "\n")
-    f.write(locations_path_entry.get() + "\n")
-    f.write(pt_results_path_entry.get() + "\n")
-    f.write(images_name_prefix_label_entry.get() + "\n")
-    f.write(images_name_postfix_label_entry.get() + "\n")
-    f.write(scale_x_size_label_entry.get() + "\n")
-    f.write(scale_y_size_label_entry.get() + "\n")
-    f.write(scale_z_size_label_entry.get() + "\n")
-    f.write(pt_search_range_label_entry.get() + "\n")
+    json.dump({
+      "Images path": images_path_label_entry.get(),
+      "DIC Results": dic_results_path_entry.get(),
+      "Locations path": locations_path_entry.get(),
+      "PT Results": pt_results_path_entry.get(),
+      "Images Time Prefix": images_name_prefix_label_entry.get(),   
+      "Images Slice Postfix": images_name_postfix_label_entry.get(),
+      "Scale x": int(scale_x_size_label_entry.get()),
+      "Scale y": int(scale_y_size_label_entry.get()),
+      "Scale z": scale_z,
+      "PT search range": int(pt_search_range_label_entry.get()),
+      "Is 2D" : int(buttons_vals[2]), 
+      "Is Backward" : int(buttons_vals[1]), 
+    }, f, indent=2)
+  f.close()
 
 def run_dic():
-  if(dic_settings_path_entry.get() == "") :
-    show_error("Settins path is empty!")
-    return
-  
-  if(dic_settings_name_entry.get() == "") :
-    show_error("Settins name is empty!")
-    return
+  dic_save_settings()
   
   print("Running 3D DIC...")
-  setting_file = dic_settings_path_entry.get() + dic_settings_name_entry.get() + ".txt"
+  setting_file = dic_settings_path_entry.get() + dic_settings_name_entry.get() + ".json"
   p = subprocess.Popen(["./DIC_3D", setting_file])
 
 def show_disps_dic():
   if(images_path_label_entry.get() == "") :
     show_error("Images path is empty!")
     return
-  
   if(dic_results_path_entry.get() == "") :
     show_error("Results path is empty!")
     return
-  
-  if(show_z_label_entry.get() == "") :
-    show_error("Select z to show!")
-    return
-  
   if(show_ref_time_label_entry.get() == "") :
     show_error("Select ref time to show!")
     return
-  
   if(show_def_time_label_entry.get() == "") :
     show_error("Select def time to show!")
     return
-  
   if(ROI_x_min_label_entry.get() == "") :
     show_error("ROI x_min is empty!")
     return
-  
   if(ROI_y_min_label_entry.get() == "") :
     show_error("ROI y_min is empty!")
     return
-  
   if(ROI_x_max_label_entry.get() == "") :
     show_error("ROI x_max is empty!")
     return
-  
   if(ROI_y_max_label_entry.get() == "") :
     show_error("ROI y_max is empty!")
     return
-  
-  if(z_spacing_label_entry.get() == "") :
-    show_error("z-spacing is empty!")
-    return
-  
   if(subset_size_label_entry.get() == "") :
     show_error("Subset size is empty!")
     return
-  
   if(subset_offset_label_entry.get() == "") :
     show_error("Subset offset is empty!")
     return
-  
   if(images_name_prefix_label_entry.get() == "") :
     show_error("Images' name prefix is empty!")
-    return
-  
-  if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 0) :
-    show_error("Images' name postfix is empty!")
     return
   
   image_filenames = get_filenames(images_path_label_entry.get())
   _, image_extension = os.path.splitext(image_filenames[0])
   times = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get())
-  if (buttons_vals[2]) :
-    stack_h = 1
-    index_to_show = 0
-    z_bounce = 1
-    bounced_z_id = 0
-    s_z = 1
-    ref_image_path = images_path_label_entry.get() + images_name_prefix_label_entry.get() + str(show_ref_time_label_entry.get()) + image_extension
-    show_case = 0
-  else :
+  #if not 2D
+  if not buttons_vals[2] :
+    if(z_spacing_label_entry.get() == "") :
+      show_error("z-spacing is empty!")
+      return
+    if(show_z_label_entry.get() == "") :
+      show_error("Select z to show!")
+      return
+    if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 0) :
+      show_error("Images' name postfix is empty!")
+      return
     stack_hs = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get() + str(list(times)[0]) + images_name_postfix_label_entry.get())
     stack_h = max(list(stack_hs))
     index_to_show = int(show_z_label_entry.get())
@@ -466,13 +421,21 @@ def show_disps_dic():
     s_z = len(range(0, stack_h, z_bounce))
     ref_image_path = images_path_label_entry.get() + images_name_prefix_label_entry.get() + str(show_ref_time_label_entry.get()) + images_name_postfix_label_entry.get() + '{:03}'.format(int(show_z_label_entry.get())) + image_extension
     show_case = buttons_vals[3]
+  else :
+    stack_h = 1
+    index_to_show = 0
+    z_bounce = 1
+    bounced_z_id = 0
+    s_z = 1
+    ref_image_path = images_path_label_entry.get() + images_name_prefix_label_entry.get() + str(show_ref_time_label_entry.get()) + image_extension
+    show_case = 0
 
   subset_size, subset_offset = int(subset_size_label_entry.get()), int(subset_offset_label_entry.get())
   roi_xy_min = [int(ROI_x_min_label_entry.get()), int(ROI_y_min_label_entry.get())]
   roi_xy_max = [int(ROI_x_max_label_entry.get()), int(ROI_y_max_label_entry.get())]
 
-  s_x = int((roi_xy_max[0] - roi_xy_min[0] - subset_size) // (subset_offset)) + 1
-  s_y = int((roi_xy_max[1] - roi_xy_min[1] - subset_size) // (subset_offset)) + 1
+  # s_x = int((roi_xy_max[0] - roi_xy_min[0] - subset_size) // (subset_offset)) + 1
+  # s_y = int((roi_xy_max[1] - roi_xy_min[1] - subset_size) // (subset_offset)) + 1
 
   ref_res_path = dic_results_path_entry.get() + 'ref_' + str(show_ref_time_label_entry.get()) + '_' + str(show_def_time_label_entry.get()) + '.txt'
   def_res_path = dic_results_path_entry.get() + 'def_' + str(show_ref_time_label_entry.get()) + '_' + str(show_def_time_label_entry.get()) + '.txt'
@@ -493,31 +456,19 @@ def show_disps_pt():
   if(images_path_label_entry.get() == "") :
     show_error("Images path is empty!")
     return
-  
   if(pt_results_path_entry.get() == "") :
     show_error("Results path is empty!")
     return
-  
-  if(show_z_label_entry.get() == "") :
-    show_error("Select z to show!")
-    return
-  
   if(show_ref_time_label_entry.get() == "") :
     show_error("Select ref time to show!")
     return
-  
   if(show_def_time_label_entry.get() == "") :
     show_error("Select def time to show!")
     return
-
-  
   if(images_name_prefix_label_entry.get() == "") :
     show_error("Images' time prefix is empty!")
     return
-  
-  if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 1) :
-    show_error("Images' slice postfix is empty!")
-    return
+  #if not 2D
   
   results_filenames = get_filenames(pt_results_path_entry.get())
 
@@ -532,46 +483,49 @@ def show_disps_pt():
   F0 = F0[F0.index.isin(F1.index)].sort_index()
   F1 = F1[F1.index.isin(F0.index)].sort_index()
 
-  image_filenames = get_filenames(images_path_label_entry.get())
-  _, image_extension = os.path.splitext(image_filenames[0])
-  image_postfix = images_name_postfix_label_entry.get().lstrip('_')
-  frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_postfix, images_name_prefix_label_entry.get()])
-  
-  if (buttons_vals[2]) :
-    frames.bundle_axes = ['x', 'y']
-    X0_img = F0[['x', 'y']].to_numpy()
-    X1_img = F1[['x', 'y']].to_numpy()
-  else :
-    frames.bundle_axes = ['x', 'y', 'z']
-    X0_img = F0[['x', 'y', 'z']].to_numpy()
-    X1_img = F1[['x', 'y', 'z']].to_numpy()
-  frames.iter_axes = 'w'
-
   # Calibration
   scale_x = float(scale_x_size_label_entry.get()) # um / pixel
   scale_y = float(scale_y_size_label_entry.get()) # um / pixel
-  scale_z = float(scale_z_size_label_entry.get()) # um / pixel
-  px_to_um = np.array([scale_x, scale_y, scale_z])
+
+  image_filenames = get_filenames(images_path_label_entry.get())
+  _, image_extension = os.path.splitext(image_filenames[0])
+  if not buttons_vals[2] :
+    if(show_z_label_entry.get() == "") :
+      show_error("Select z to show!")
+      return
+    if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 0) :
+      show_error("Images' name postfix is empty!")
+      return
+    frames.bundle_axes = ['x', 'y', 'z']
+    X0_img = F0[['x', 'y', 'z']].to_numpy()
+    X1_img = F1[['x', 'y', 'z']].to_numpy()
+    image_postfix = images_name_postfix_label_entry.get().lstrip('_')
+    frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_postfix, images_name_prefix_label_entry.get()])
+    px_to_um = np.array([scale_x, scale_y, float(scale_z_size_label_entry.get())])
+    show_component = buttons_vals[3] + 1 # y or z
+  else :
+    frames.bundle_axes = ['x', 'y']
+    X0_img = F0[['x', 'y']].to_numpy()
+    X1_img = F1[['x', 'y']].to_numpy()
+    frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [images_name_prefix_label_entry.get()])
+    px_to_um = np.array([scale_x, scale_y])
+    show_component = 1 # y
+
+  frames.iter_axes = 'w'
 
   X0_um = X0_img * px_to_um
   X1_um = X1_img * px_to_um
   disp = X1_um - X0_um
-
-  ev_slice = int(show_z_label_entry.get())
-
-  if (buttons_vals[2]) :
-    index = 0
-  else :
-    index = buttons_vals[3] + 1 # add u and v separately
 
   fig0, ax0 = plt.subplots(figsize=(6,3),dpi=300)
   if (buttons_vals[2]) :
     ax0.imshow(frames[ev_fn],cmap='gray')
     sc0 = ax0.scatter(X1_img[0],X1_img[1], c=disp[0]-np.nanmean(disp[0]),cmap='jet',s=1)
   else :
+    ev_slice = int(show_z_label_entry.get())
     pt_filter = np.logical_and(X0_img[:,2]>=40, X0_img[:,2]<60)
     ax0.imshow(frames[ev_fn][ev_slice],cmap='gray')
-    sc0 = ax0.scatter(X1_img[pt_filter,0],X1_img[pt_filter,1], c=disp[pt_filter,index]-np.nanmean(disp[pt_filter,index]),cmap='jet',s=1)
+    sc0 = ax0.scatter(X1_img[pt_filter,0],X1_img[pt_filter,1], c=disp[pt_filter,show_component]-np.nanmean(disp[pt_filter,show_component]),cmap='jet',s=1)
 
   sc0.set_clim(-50,50)
   cbar0 = fig0.colorbar(sc0,ax=ax0)
@@ -650,21 +604,19 @@ def generate_lc(diameter, separation) :
 
 
 def run_pt():
-  if(pt_settings_path_entry.get() == "") :
-    show_error("Settins path is empty!")
-    return
-  
-  if(pt_settings_name_entry.get() == "") :
-    show_error("Settins name is empty!")
-    return
-  
-  # TODO add all fields
+  pt_save_settings()
 
   # Calibration
   scale_x = float(scale_x_size_label_entry.get()) # um / pixel
   scale_y = float(scale_y_size_label_entry.get()) # um / pixel
-  scale_z = float(scale_z_size_label_entry.get()) # um / pixel
-  px_to_um = np.array([scale_x, scale_y, scale_z])
+  # if not 2D
+  if not (buttons_vals[2]) :
+    scale_z = float(scale_z_size_label_entry.get()) # um / pixel
+    px_to_um = np.array([scale_x, scale_y, scale_z])
+  else :
+    px_to_um = np.array([scale_x, scale_y])
+
+  # TODO add support of 2D PT
 
   image_filenames = get_filenames(images_path_label_entry.get())
   _, image_extension = os.path.splitext(image_filenames[0])
@@ -678,7 +630,6 @@ def run_pt():
   frames.iter_axes = 'w'
 
   time_size = frames.shape[0]
-  # print("times: ", time_size)
 
   # pt locations
   locations_filenames = get_filenames(locations_path_entry.get())
@@ -830,7 +781,7 @@ dic_settings_name = Label(text_frame, text="DIC settings filename:")
 dic_settings_name.grid(row=2, column=3, sticky="ew")
 dic_settings_name_entry = Entry(text_frame, width=30)
 dic_settings_name_entry.grid(row=2, column=4, sticky="ew")
-dic_settings_name_extension = Label(text_frame, text=".txt")
+dic_settings_name_extension = Label(text_frame, text=".json")
 dic_settings_name_extension.grid(row=2, column=5, sticky="ew")
 settings_save_button = Button(text_frame, text="Save", command=dic_save_settings)
 settings_save_button.grid(row=2, column=6, sticky="ew")
@@ -863,7 +814,7 @@ pt_settings_name = Label(text_frame, text="PT settings filename:")
 pt_settings_name.grid(row=5, column=3, sticky="ew")
 pt_settings_name_entry = Entry(text_frame, width=30)
 pt_settings_name_entry.grid(row=5, column=4, sticky="ew")
-pt_settings_name_extension = Label(text_frame, text=".txt")
+pt_settings_name_extension = Label(text_frame, text=".json")
 pt_settings_name_extension.grid(row=5, column=5, sticky="ew")
 settings_save_button = Button(text_frame, text="Save", command=pt_save_settings)
 settings_save_button.grid(row=5, column=6, sticky="ew")

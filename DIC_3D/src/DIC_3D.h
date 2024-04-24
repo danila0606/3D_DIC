@@ -1,5 +1,6 @@
 #include "ncorr.h"
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 struct DIC_3D_Input {
 
@@ -8,28 +9,30 @@ struct DIC_3D_Input {
         if (!f.is_open()) {
             throw std::runtime_error("Can't open file " + filename + " !");
         }
-        // f >> is_2D_case;
+        nlohmann::json settings_json = nlohmann::json::parse(f);
+        settings_json.at("Subset size").get_to(subset_size);
+        settings_json.at("Subset offset").get_to(subset_offset);
+        settings_json.at("Z spacing").get_to(z_bounce);
+        settings_json.at("Z search").get_to(z_radius);
+        settings_json.at("Images path").get_to(images_folder);
+        settings_json.at("DIC Results").get_to(output_folder);
+        settings_json.at("Images Time Prefix").get_to(image_name_prefix);
+        settings_json.at("Images Slice Postfix").get_to(image_name_postfix);
+        settings_json.at("Times").get_to(times);
+        settings_json.at("ROI x min").get_to(roi_xy_min[0]);
+        settings_json.at("ROI y min").get_to(roi_xy_min[1]);
+        settings_json.at("ROI x max").get_to(roi_xy_max[0]);
+        settings_json.at("ROI y max").get_to(roi_xy_max[1]);
+        settings_json.at("Downsampling").get_to(downsampling_factor);
+        settings_json.at("Stack height").get_to(stack_h);
+        settings_json.at("Image extension").get_to(image_extension);
+        int is_2d, is_backward, ignore1layer;
+        settings_json.at("Is 2D").get_to(is_2d);
+        settings_json.at("Is Backward").get_to(is_backward);
+        settings_json.at("Ignore first layer").get_to(ignore1layer);
+        is_2D_case = bool(is_2d); backward_calculation = bool(is_backward); ignore_1st_layer = bool(ignore1layer);
 
-        f >> subset_size >> subset_offset;
-        f >> z_bounce >> z_radius;
-        f >> images_folder;
-        f >> output_folder;
-        f >> image_name_prefix >> image_name_postfix;
-        size_t times_count;
-        f >> times_count;
-        times.resize(times_count);
-
-        for (size_t i = 0; i < times_count; ++i) {
-            f >> times[i];
-        }
-
-        f >> roi_xy_min[0] >> roi_xy_min[1] >> roi_xy_max[0] >> roi_xy_max[1];
-        f >> downsampling_factor;
-        f >> stack_h;
-        f >> image_extension;
-        f >> ignore_1st_layer;
-        f >> backward_calculation;
-        f >> is_2D_case;
+        f.close();
 
         if (is_2D_case) {
             ignore_1st_layer = false;
@@ -38,8 +41,6 @@ struct DIC_3D_Input {
             z_radius = 0;
             image_name_postfix = "";
         }
-
-        f.close();
     };
 
     void debug_print(std::ostream& os) const {

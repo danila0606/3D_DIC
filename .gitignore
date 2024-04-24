@@ -4,3 +4,4 @@ README.md
 DIC_3D/bin/
 build/
 DIC_3D/build/
+DIC_3D/__pycache__/

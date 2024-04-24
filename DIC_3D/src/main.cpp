@@ -82,11 +82,12 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
     imgs.push_back(ref_image);
     imgs.push_back(def_image);
 
-    cv::Mat ref_img = cv::imread(ref_image);
-    size_t img_size_x = ref_img.cols, img_size_y = ref_img.rows;
-    std::vector<float>ref_vec(ref_img.begin<float>(), ref_img.end<float>());
+    // cv::Mat ref_img = cv::imread(ref_image);
+    // size_t img_size_x = ref_img.cols, img_size_y = ref_img.rows;
+    size_t img_size_x = 2048, img_size_y = 2048; //debug
+    // std::vector<float>ref_vec(ref_img.begin<float>(), ref_img.end<float>());
 
-    auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
+    // auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
 
     // if (aver_grad < 0.001) {
     //     std::cout << "Skip: " << "[" << s_xy_min[0] << ", " << s_xy_min[1] << "]" <<std::endl;
@@ -186,7 +187,7 @@ int main(int argc, char *argv[]) {
             std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
             auto result_def = result_ref;
 
-            std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
+            // std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
             std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
             
             for (size_t i = 0; i < s_y; ++i) {
@@ -293,7 +294,7 @@ int main(int argc, char *argv[]) {
 
             std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
-            std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << ".\n" << std::endl;
+            // std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << ".\n" << std::endl;
 
             std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
             if (!out_file_ref.is_open()) {
@@ -325,9 +326,9 @@ int main(int argc, char *argv[]) {
         }, idx);
     }
 
-    int k = 0;
     for (size_t i = 0; i < threads.size(); ++i) {
         threads[i].join();
     }
+
   	return 0;
 }

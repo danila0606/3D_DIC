@@ -8,6 +8,11 @@ PROJECT(DIC_3D)
 # Set output for executable
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 
+if (APPLE)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /opt/homebrew/include")
+	INCLUDE_DIRECTORIES(/usr/local/include/)
+endif()
+
 # Add executable
 ADD_EXECUTABLE(DIC_3D ../src/main.cpp)
 
