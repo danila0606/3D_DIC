@@ -421,7 +421,7 @@ def show_disps_dic():
     stack_h = max(list(stack_hs))
     index_to_show = int(show_z_label_entry.get())
     z_bounce = int(z_spacing_label_entry.get())
-    bounced_z_id = 0 #index_to_show // z_bounce
+    bounced_z_id = index_to_show // z_bounce
     s_z = len(range(0, stack_h, z_bounce))
     ref_image_path = images_path_label_entry.get() + images_name_prefix_label_entry.get() + str(show_ref_time_label_entry.get()) + images_name_postfix_label_entry.get() + '{:03}'.format(int(show_z_label_entry.get())) + image_extension
     show_case = buttons_vals[3]

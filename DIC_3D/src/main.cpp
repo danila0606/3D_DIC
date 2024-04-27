@@ -119,8 +119,6 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
 
     auto arr_u = DIC_output.disps[0].get_u().get_array();
     auto arr_v = DIC_output.disps[0].get_v().get_array();
-    std::cout <<"arr_u sz: " <<  arr_u.size() << std::endl;
-    std::cout <<"arr_v sz: " << arr_v.size() << std::endl;
     float u_aver = 0., v_aver = 0.;
     
     size_t n_u = 0, n_v = 0;
