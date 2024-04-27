@@ -10,6 +10,8 @@ struct DIC_3D_Input {
             throw std::runtime_error("Can't open file " + filename + " !");
         }
         nlohmann::json settings_json = nlohmann::json::parse(f);
+        settings_json.at("Images size x").get_to(image_size_xy[0]);
+        settings_json.at("Images size y").get_to(image_size_xy[1]);
         settings_json.at("Subset size").get_to(subset_size);
         settings_json.at("Subset offset").get_to(subset_offset);
         settings_json.at("Z spacing").get_to(z_bounce);
@@ -44,6 +46,7 @@ struct DIC_3D_Input {
     };
 
     void debug_print(std::ostream& os) const {
+        os << "Images size x: " << image_size_xy[0] << ", y: " << image_size_xy[1] << std::endl;
         os << "subset size: " << subset_size << ", " << "subset offset: " << subset_offset << std::endl;
         os << "z bounce: " << z_bounce << ", " << "z radius: " << z_radius << std::endl;
         os << "images folder: " << images_folder << std::endl;
@@ -61,6 +64,8 @@ struct DIC_3D_Input {
         os << "backward calculation: " << backward_calculation << std::endl;
         os << "2D case: " << is_2D_case << std::endl;
     }
+
+    std::array<size_t, 2> image_size_xy;
 
     size_t subset_size, subset_offset;
     size_t z_bounce, z_radius;

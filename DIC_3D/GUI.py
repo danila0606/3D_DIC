@@ -248,6 +248,8 @@ def dic_save_settings():
   times = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get())
   times = sorted(times)
 
+  image0 = cv2.imread(images_path_label_entry.get() + image_filenames[0])
+
   if not (buttons_vals[2]):
     if(z_search_label_entry.get() == "") :
       show_error("z-search radius is empty!")
@@ -271,6 +273,8 @@ def dic_save_settings():
   file = dic_settings_path_entry.get() + dic_settings_name_entry.get() + ".json"
   with open(file, 'w') as f:
     json.dump({
+      "Image size x": int(image0.shape[1]),
+      "Image size y": int(image0.shape[0]),
       "Subset size": int(subset_size_label_entry.get()), 
       "Subset offset": int(subset_offset_label_entry.get()), 
       "Z spacing": z_spacing, 
@@ -417,7 +421,7 @@ def show_disps_dic():
     stack_h = max(list(stack_hs))
     index_to_show = int(show_z_label_entry.get())
     z_bounce = int(z_spacing_label_entry.get())
-    bounced_z_id = index_to_show // z_bounce
+    bounced_z_id = 0 #index_to_show // z_bounce
     s_z = len(range(0, stack_h, z_bounce))
     ref_image_path = images_path_label_entry.get() + images_name_prefix_label_entry.get() + str(show_ref_time_label_entry.get()) + images_name_postfix_label_entry.get() + '{:03}'.format(int(show_z_label_entry.get())) + image_extension
     show_case = buttons_vals[3]

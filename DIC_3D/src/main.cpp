@@ -84,7 +84,6 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
 
     // cv::Mat ref_img = cv::imread(ref_image);
     // size_t img_size_x = ref_img.cols, img_size_y = ref_img.rows;
-    size_t img_size_x = 2048, img_size_y = 2048; //debug
     // std::vector<float>ref_vec(ref_img.begin<float>(), ref_img.end<float>());
 
     // auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
@@ -96,10 +95,10 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
     //     return res;
     // }
 
-    auto ROI = Array2D<double>(img_size_y, img_size_x, 0.0);
+    auto ROI = Array2D<double>(dic_in.image_size_xy[1], dic_in.image_size_xy[0], 0.0);
     for (size_t j = 0; j < dic_in.subset_size; ++j) {
         for (size_t i = 0; i < dic_in.subset_size; ++i) {
-            ROI(s_xy_min[0] + i, s_xy_min[1] + j) = 1.0;
+            ROI(s_xy_min[1] + j, s_xy_min[0] + i) = 1.0;
         }
     }
 
@@ -120,23 +119,28 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
 
     auto arr_u = DIC_output.disps[0].get_u().get_array();
     auto arr_v = DIC_output.disps[0].get_v().get_array();
+    std::cout <<"arr_u sz: " <<  arr_u.size() << std::endl;
+    std::cout <<"arr_v sz: " << arr_v.size() << std::endl;
     float u_aver = 0., v_aver = 0.;
     
-    size_t n = 0;
+    size_t n_u = 0, n_v = 0;
     for (size_t i = 0; i < arr_u.size(); ++i) {
         if (arr_u(i) != 0) {
             u_aver += arr_u(i);
+            ++n_u;
+        }
+        if (arr_v(i) != 0) {
             v_aver += arr_v(i);
-            ++n;
+            ++n_v;
         }
     }
 
-    if (n == 0) {
+    if (n_u == 0) {
         return res;
     }
 
-    res.u = u_aver /= n;
-    res.v = v_aver /= n;
+    res.u = u_aver / n_u;
+    res.v = v_aver / n_v;
     res.coef = DIC_output.corr_coef;
 
     return res;
@@ -187,7 +191,7 @@ int main(int argc, char *argv[]) {
             std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
             auto result_def = result_ref;
 
-            // std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
+            std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
             std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
             
             for (size_t i = 0; i < s_y; ++i) {
@@ -211,6 +215,7 @@ int main(int argc, char *argv[]) {
                         if (!dic_in.is_2D_case) {
                             ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
                         }
+                        
                         auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
                         size_t k_bounced = k / dic_in.z_bounce;
 
@@ -240,6 +245,7 @@ int main(int argc, char *argv[]) {
                             }
                             auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
                             auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
+
                             if (res.coef <= best_coef) {
                                 best_u = res.u;
                                 best_v = res.v;
@@ -294,7 +300,7 @@ int main(int argc, char *argv[]) {
 
             std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
-            // std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << ".\n" << std::endl;
+            std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << " on stacks " << ref_image_stack_number << " and " << def_image_stack_number << ".\n" << std::endl;
 
             std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
             if (!out_file_ref.is_open()) {
