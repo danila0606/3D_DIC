@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
             std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
             auto result_def = result_ref;
 
-            std::cout << "Processing correlation between " << ref_image_stack_number << " and " << def_image_stack_number << " stacks..." << std::endl;
+            printf("Processing correlation between %d and %d stacks...\n", ref_image_stack_number, def_image_stack_number);
             std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
             
             for (size_t i = 0; i < s_y; ++i) {
@@ -229,14 +229,14 @@ int main(int argc, char *argv[]) {
                             search_z_min = 0;
 
                         int search_z_max = k + dic_in.z_radius;
-                        if (search_z_max >= dic_in.stack_h)
-                            search_z_max = dic_in.stack_h - 1; // TODO: -1 is not necessary
+                        if (search_z_max > dic_in.stack_h)
+                            search_z_max = dic_in.stack_h; // TODO: -1 is not necessary
 
                         float best_coef = bad_coef;
                         float best_u = 0., best_v = 0.;
                         int best_z = init_z;
 
-                        for (int z = init_z; z < search_z_max + 1; ++z) {
+                        for (int z = init_z; z <= search_z_max; ++z) {
                             std::stringstream def_z_str;
                             if (!dic_in.is_2D_case) {
                                 def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
 
             std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
-            std::cout << "Time spent: " << elapsed_seconds_2stacks.count() << " on stacks " << ref_image_stack_number << " and " << def_image_stack_number << ".\n" << std::endl;
+            printf("Time spent: %f on stacks %d and %d.\n", elapsed_seconds_2stacks.count(), ref_image_stack_number, def_image_stack_number);
 
             std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
             if (!out_file_ref.is_open()) {

@@ -438,9 +438,6 @@ def show_disps_dic():
   roi_xy_min = [int(ROI_x_min_label_entry.get()), int(ROI_y_min_label_entry.get())]
   roi_xy_max = [int(ROI_x_max_label_entry.get()), int(ROI_y_max_label_entry.get())]
 
-  # s_x = int((roi_xy_max[0] - roi_xy_min[0] - subset_size) // (subset_offset)) + 1
-  # s_y = int((roi_xy_max[1] - roi_xy_min[1] - subset_size) // (subset_offset)) + 1
-
   ref_res_path = dic_results_path_entry.get() + 'ref_' + str(show_ref_time_label_entry.get()) + '_' + str(show_def_time_label_entry.get()) + '.txt'
   def_res_path = dic_results_path_entry.get() + 'def_' + str(show_ref_time_label_entry.get()) + '_' + str(show_def_time_label_entry.get()) + '.txt'
   # coefs_res_path = results_path_entry.get() + 'coefs_' + str(show_ref_time_label_entry.get()) + '_' + str(show_def_time_label_entry.get()) + '.txt'
@@ -500,18 +497,18 @@ def show_disps_pt():
     if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 0) :
       show_error("Images' name postfix is empty!")
       return
-    frames.bundle_axes = ['x', 'y', 'z']
     X0_img = F0[['x', 'y', 'z']].to_numpy()
     X1_img = F1[['x', 'y', 'z']].to_numpy()
     image_postfix = images_name_postfix_label_entry.get().lstrip('_')
     frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_postfix, images_name_prefix_label_entry.get()])
+    frames.bundle_axes = ['x', 'y', 'z']
     px_to_um = np.array([scale_x, scale_y, float(scale_z_size_label_entry.get())])
     show_component = buttons_vals[3] + 1 # y or z
   else :
-    frames.bundle_axes = ['x', 'y']
     X0_img = F0[['x', 'y']].to_numpy()
     X1_img = F1[['x', 'y']].to_numpy()
     frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [images_name_prefix_label_entry.get()])
+    frames.bundle_axes = ['x', 'y']
     px_to_um = np.array([scale_x, scale_y])
     show_component = 1 # y
 
@@ -521,7 +518,7 @@ def show_disps_pt():
   X1_um = X1_img * px_to_um
   disp = X1_um - X0_um
 
-  fig0, ax0 = plt.subplots(figsize=(6,3),dpi=300)
+  fig0, ax0 = plt.subplots(figsize=(6,3), dpi = 300)
   if (buttons_vals[2]) :
     ax0.imshow(frames[ev_fn],cmap='gray')
     sc0 = ax0.scatter(X1_img[0],X1_img[1], c=disp[0]-np.nanmean(disp[0]),cmap='jet',s=1)
@@ -717,12 +714,14 @@ def run_pt():
   fTuple = ()
   for fid in np.arange(np.max(pt_loc.frame)+1):
         fTuple = fTuple + (pt_loc[pt_loc['frame']==fid],)
+
   # Link particles
   pt_link = pd.concat(tp.link_df_iter(fTuple, search_range = pt_search_range, pos_columns = pt_pos_columns,
                                      adaptive_stop = 0.01, adaptive_step = 0.95, predictor=pred01))
     
   # Save linked
   pt_link.to_pickle(pt_link_path)
+  print("PT finished! Check results in ", pt_link_path)
 
 
 def show_disps_dic_or_pt() :
