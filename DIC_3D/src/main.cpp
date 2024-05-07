@@ -88,7 +88,7 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
 
     auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
 
-    if (aver_grad < 0.01) {
+    if (aver_grad < dic_in.gradient_threshold) {
         // std::cout << "Skip: " << "[" << s_xy_min[0] << ", " << s_xy_min[1] << "]" <<std::endl;
         SubsetCorr res;
         res.skipped = true;
@@ -153,9 +153,6 @@ int main(int argc, char *argv[]) {
 	DIC_3D_Input dic_in(argv[1]);
 	dic_in.debug_print(std::cout);
 
-    const float coef_treshold = 0.15;
-    const float delta_coef_treshold = 0.1 * coef_treshold;
-    // float wrong_coef_treshold = 0.20; //0.30
     const float bad_coef = 1e6;
 
     const size_t s_x = (dic_in.roi_xy_max[0] - dic_in.roi_xy_min[0] - dic_in.subset_size) / (dic_in.subset_offset) + 1;
@@ -231,7 +228,7 @@ int main(int argc, char *argv[]) {
 
                         int search_z_max = k + dic_in.z_radius;
                         if (search_z_max > dic_in.stack_h)
-                            search_z_max = dic_in.stack_h; // TODO: -1 is not necessary
+                            search_z_max = dic_in.stack_h;
 
                         float best_coef = bad_coef;
                         float best_u = 0., best_v = 0.;
@@ -251,16 +248,12 @@ int main(int argc, char *argv[]) {
                                 best_coef = res.coef;
                                 best_z = z;
                             }
-                            else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
+                            else if ((best_coef < dic_in.coef_threshold) && (res.coef - best_coef > dic_in.delta_coef_threshold)) {
                                 break; 
                             }
-                            // else if (best_coef < wrong_coef_treshold) {
-                            //     break;
-                            // }
-                                
                         }
 
-                        if ((best_z > init_z || (init_z - 1) < 0) & (best_coef < coef_treshold)) {
+                        if ((best_z > init_z || (init_z - 1) < 0) & (best_coef < dic_in.coef_threshold)) {
                             result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
                             result_coefs[xyz_table_start + k_bounced] = best_coef;
                             initial_z_guess[k_bounced] = best_z;
@@ -281,12 +274,9 @@ int main(int argc, char *argv[]) {
                                 best_coef = res.coef;
                                 best_z = z;
                             }
-                            else if ((best_coef < coef_treshold) && (res.coef - best_coef > delta_coef_treshold)) {
+                            else if ((best_coef < dic_in.coef_threshold) && (res.coef - best_coef > dic_in.delta_coef_threshold)) {
                                 break;
                             }
-                            // else if (best_coef < wrong_coef_treshold) {
-                            //     break;
-                            // }
                         }
 
                         result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};

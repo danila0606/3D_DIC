@@ -33,6 +33,9 @@ struct DIC_3D_Input {
         settings_json.at("Is Backward").get_to(is_backward);
         settings_json.at("Ignore first layer").get_to(ignore1layer);
         is_2D_case = bool(is_2d); backward_calculation = bool(is_backward); ignore_1st_layer = bool(ignore1layer);
+        settings_json.at("coef threshold").get_to(coef_threshold);
+        settings_json.at("delta coef threshold").get_to(delta_coef_threshold);
+        settings_json.at("crack gradient threshold").get_to(gradient_threshold);
 
         f.close();
 
@@ -63,6 +66,9 @@ struct DIC_3D_Input {
         os << "ignore 1st_layer: " << ignore_1st_layer << std::endl;
         os << "backward calculation: " << backward_calculation << std::endl;
         os << "2D case: " << is_2D_case << std::endl;
+        os << "coef threshold: " << coef_threshold << std::endl;
+        os << "delta coef threshold: " << delta_coef_threshold << std::endl;
+        os << "crack gradient threshold: " << gradient_threshold << std::endl;
     }
 
     std::array<size_t, 2> image_size_xy;
@@ -81,4 +87,6 @@ struct DIC_3D_Input {
     bool ignore_1st_layer;
     bool backward_calculation;
     bool is_2D_case;
+
+    float coef_threshold, delta_coef_threshold, gradient_threshold;
 };

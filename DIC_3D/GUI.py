@@ -110,6 +110,15 @@ def load_dic_settings():
       downsampling_label_entry.delete(0, END)
       downsampling_label_entry.insert(END, str(json_dic_set['Downsampling']))
 
+      threshold_label_entry.delete(0, END)
+      threshold_label_entry.insert(END, str(json_dic_set['coef threshold']))
+
+      delta_threshold_label_entry.delete(0, END)
+      delta_threshold_label_entry.insert(END, str(json_dic_set['delta coef threshold']))
+
+      crack_gradient_label_entry.delete(0, END)
+      crack_gradient_label_entry.insert(END, str(json_dic_set['crack gradient threshold']))
+
       buttons_vals[0] = int(json_dic_set['Ignore first layer'])
       ignore_1st_layer_button.config(text=str(bool(buttons_vals[0])))
 
@@ -242,6 +251,15 @@ def dic_save_settings():
   if(images_name_prefix_label_entry.get() == "") :
     show_error("Images' name prefix is empty!")
     return
+  if(threshold_label_entry.get() == "") :
+    show_error("coef threshold is empty!")
+    return
+  if(delta_threshold_label_entry.get() == "") :
+    show_error("delta coef threshold is empty!")
+    return
+  if(crack_gradient_label_entry.get() == "") :
+    show_error("crack gradient threshold is empty!")
+    return
   
   image_filenames = get_filenames(images_path_label_entry.get())
   _, image_extension = os.path.splitext(image_filenames[0])
@@ -293,7 +311,10 @@ def dic_save_settings():
       "Image extension": image_extension, 
       "Is 2D" : int(buttons_vals[2]), 
       "Is Backward" : int(buttons_vals[1]), 
-      "Ignore first layer" : int(buttons_vals[0])
+      "Ignore first layer" : int(buttons_vals[0]),
+      "coef threshold" : float(threshold_label_entry.get()),
+      "delta coef threshold" : float(delta_threshold_label_entry.get()),
+      "crack gradient threshold" : float(crack_gradient_label_entry.get())
     }, f, indent=2)
   
   f.close()
@@ -865,13 +886,33 @@ downsampling_label_entry.grid(row=4, column=1, sticky="ew")
 downsampling_end_label = Label(dic_settings_frame, text="px")
 downsampling_end_label.grid(row=4, column=2, sticky="ew")
 
+
 ignore_1st_layer_label = Label(dic_settings_frame, text="ignore 1st layer:")
 ignore_1st_layer_label.grid(row=5, column=0, sticky="ew")
 ignore_1st_layer_button = Button(dic_settings_frame, text=str(bool(buttons_vals[0])), command=change_ignore_1st_layer)
 ignore_1st_layer_button.grid(row=5, column=1, sticky="ew")
+
+threshold_label = Label(dic_settings_frame, text="coef threshold:")
+threshold_label.grid(row=6, column=0, sticky="ew")
+threshold_label_entry = Entry(dic_settings_frame, width=5)
+threshold_label_entry.insert(END, '0.15')
+threshold_label_entry.grid(row=6, column=1, sticky="ew")
+
+delta_threshold_label = Label(dic_settings_frame, text="delta coef threshold:")
+delta_threshold_label.grid(row=7, column=0, sticky="ew")
+delta_threshold_label_entry = Entry(dic_settings_frame, width=5)
+delta_threshold_label_entry.insert(END, '0.015')
+delta_threshold_label_entry.grid(row=7, column=1, sticky="ew")
+
+crack_gradient_label = Label(dic_settings_frame, text="crack gradient threshold:")
+crack_gradient_label.grid(row=8, column=0, sticky="ew")
+crack_gradient_label_entry = Entry(dic_settings_frame, width=5)
+crack_gradient_label_entry.insert(END, '0.01')
+crack_gradient_label_entry.grid(row=8, column=1, sticky="ew")
+
 # RUN DIC
 run_label_button = Button(dic_settings_frame, text="Run DIC", command=run_dic)  # Define browse_pt_image function later
-run_label_button.grid(row=6, column=0, padx=10, sticky="ew")
+run_label_button.grid(row=9, column=0, padx=10, sticky="ew")
 
 
 backward_value_label = Label(buttons_frame, text="Calculation:")
