@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
                 throw std::runtime_error("Can't open folder " + dic_in.output_folder + " !");
             }
             for (auto& xyz : result_ref) {
-                out_file_ref << xyz[0] << " " << xyz[1] << " " << xyz[2] << std::endl;   
+                out_file_ref << xyz[0] << "," << xyz[1] << "," << xyz[2] << ',\n';   
             }
             out_file_ref.close();
 
@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
                 throw std::runtime_error("Can't open folder  " + dic_in.output_folder + " !");
             }
             for (auto& xyz : result_def) {
-                out_file_def << xyz[0] << " " << xyz[1] << " " << xyz[2] << std::endl;   
+                out_file_def << xyz[0] << "," << xyz[1] << "," << xyz[2] << ',\n';   
             }
             out_file_def.close();
 
@@ -324,7 +324,7 @@ int main(int argc, char *argv[]) {
                 throw std::runtime_error("Can't open folder " + dic_in.output_folder + " !");
             }
             for (auto& coef : result_coefs) {
-                out_file_coefs << coef << std::endl;   
+                out_file_coefs << coef << ',\n';   
             }
             out_file_coefs.close();
 
