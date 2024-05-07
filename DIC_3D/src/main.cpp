@@ -82,20 +82,20 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
     imgs.push_back(ref_image);
     imgs.push_back(def_image);
 
-    // cv::Mat ref_img = cv::imread(ref_image);
-    // size_t img_size_x = ref_img.cols, img_size_y = ref_img.rows;
-    // std::vector<float>ref_vec(ref_img.begin<float>(), ref_img.end<float>());
+    auto ref_img_data = imgs[0].get_gs();
+    const size_t img_size_x = dic_in.image_size_xy[0], img_size_y = dic_in.image_size_xy[1];
+    std::vector<float>ref_vec(ref_img_data.begin(), ref_img_data.end());
 
-    // auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
+    auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
 
-    // if (aver_grad < 0.001) {
-    //     std::cout << "Skip: " << "[" << s_xy_min[0] << ", " << s_xy_min[1] << "]" <<std::endl;
-    //     SubsetCorr res;
-    //     res.skipped = true;
-    //     return res;
-    // }
+    if (aver_grad < 0.01) {
+        // std::cout << "Skip: " << "[" << s_xy_min[0] << ", " << s_xy_min[1] << "]" <<std::endl;
+        SubsetCorr res;
+        res.skipped = true;
+        return res;
+    }
 
-    auto ROI = Array2D<double>(dic_in.image_size_xy[1], dic_in.image_size_xy[0], 0.0);
+    auto ROI = Array2D<double>(img_size_y, img_size_x, 0.0);
     for (size_t j = 0; j < dic_in.subset_size; ++j) {
         for (size_t i = 0; i < dic_in.subset_size; ++i) {
             ROI(s_xy_min[1] + j, s_xy_min[0] + i) = 1.0;
@@ -221,6 +221,7 @@ int main(int argc, char *argv[]) {
                         if (dic_in.ignore_1st_layer && (k == interesting_layers[0])) {
                             result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
                             result_coefs[xyz_table_start + k_bounced] = bad_coef;
+                            continue;
                         }
 
                         int init_z = initial_z_guess[k_bounced];
