@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
                         size_t k_bounced = k / dic_in.z_bounce;
 
                         result_ref[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0]), static_cast<float>(subset_center[1]), static_cast<float>(k)};
-                        if (dic_in.ignore_1st_layer && (k == interesting_layers[0])) {
+                        if (std::find(dic_in.layers_to_calculate.begin(), dic_in.layers_to_calculate.end(), k) == dic_in.layers_to_calculate.end()) {
                             result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
                             result_coefs[xyz_table_start + k_bounced] = bad_coef;
                             continue;
@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
                 throw std::runtime_error("Can't open folder " + dic_in.output_folder + " !");
             }
             for (auto& xyz : result_ref) {
-                out_file_ref << xyz[0] << "," << xyz[1] << "," << xyz[2] << ',\n';   
+                out_file_ref << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;   
             }
             out_file_ref.close();
 
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
                 throw std::runtime_error("Can't open folder  " + dic_in.output_folder + " !");
             }
             for (auto& xyz : result_def) {
-                out_file_def << xyz[0] << "," << xyz[1] << "," << xyz[2] << ',\n';   
+                out_file_def << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;   
             }
             out_file_def.close();
 
@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
                 throw std::runtime_error("Can't open folder " + dic_in.output_folder + " !");
             }
             for (auto& coef : result_coefs) {
-                out_file_coefs << coef << ',\n';   
+                out_file_coefs << coef << std::endl;
             }
             out_file_coefs.close();
 

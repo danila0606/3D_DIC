@@ -4,6 +4,8 @@ import pandas as pd
 import trackpy as tp
 import pims
 
+import ast
+
 import json
   
 
@@ -13,14 +15,6 @@ root.title("3D DIC")
 
 # ignore_1st_layer, calculation_order, 2D_or_3D, show_uv_or_z, show_dic_or_pt
 buttons_vals = [0, 0, 0, 0, 0]
-
-# def update_GUI_fields() :
-#   if (buttons_vals[2]) :
-
-
-def change_ignore_1st_layer():
-  buttons_vals[0] = 1 - buttons_vals[0]
-  ignore_1st_layer_button.config(text=str(bool(buttons_vals[0])))
 
 def change_backward():
   buttons_vals[1] = 1 - buttons_vals[1]
@@ -118,9 +112,6 @@ def load_dic_settings():
 
       crack_gradient_label_entry.delete(0, END)
       crack_gradient_label_entry.insert(END, str(json_dic_set['crack gradient threshold']))
-
-      buttons_vals[0] = int(json_dic_set['Ignore first layer'])
-      ignore_1st_layer_button.config(text=str(bool(buttons_vals[0])))
 
       buttons_vals[1] = int(json_dic_set['Is Backward'])
       if (buttons_vals[1]) :
@@ -284,9 +275,17 @@ def dic_save_settings():
     z_spacing = int(z_spacing_label_entry.get())
     z_search = int(z_search_label_entry.get())
   else :
-    stack_h = 1
+    stack_h = 0
     z_spacing = -1
     z_search = -1
+
+  start_layer = 0
+  if (calc_layers_from_entry.get() != "") :
+    start_layer = int(calc_layers_from_entry.get())
+  end_layer = stack_h
+  if (calc_layers_to_entry.get() != "") :
+    end_layer = int(calc_layers_to_entry.get())
+  layers_to_calculate = list(range(start_layer, end_layer + 1))
 
   file = dic_settings_path_entry.get() + dic_settings_name_entry.get() + ".json"
   with open(file, 'w') as f:
@@ -311,7 +310,7 @@ def dic_save_settings():
       "Image extension": image_extension, 
       "Is 2D" : int(buttons_vals[2]), 
       "Is Backward" : int(buttons_vals[1]), 
-      "Ignore first layer" : int(buttons_vals[0]),
+      "layers to calculate" : layers_to_calculate,
       "coef threshold" : float(threshold_label_entry.get()),
       "delta coef threshold" : float(delta_threshold_label_entry.get()),
       "crack gradient threshold" : float(crack_gradient_label_entry.get())
@@ -599,26 +598,32 @@ def generate_locations_window() :
   separation_z_size_label_entry = Entry(generate_window, width=5)
   separation_z_size_label_entry.grid(row=2, column=6, sticky="ew")
 
+  locations_args = Label(generate_window, text="Optinal args")
+  locations_args.grid(row=3, column=0, sticky="ew")
+  locations_args_entry = Entry(generate_window, width=100)
+  locations_args_entry.grid(row=3, column=7, sticky="ew")
+
   generate_button = Button(generate_window, text="Generate", command=lambda: generate_lc( \
     [int(diameter_x_size_label_entry.get()), int(diameter_y_size_label_entry.get()), int(diameter_z_size_label_entry.get())], \
-    [int(separation_x_size_label_entry.get()), int(separation_y_size_label_entry.get()), int(separation_z_size_label_entry.get())]))
-  generate_button.grid(row=3, column=0, padx=10, sticky="ew")
+    [int(separation_x_size_label_entry.get()), int(separation_y_size_label_entry.get()), int(separation_z_size_label_entry.get())], locations_args_entry.get()))
+  generate_button.grid(row=4, column=0, padx=10, sticky="ew")
   generate_window.mainloop()
 
-def generate_lc(diameter, separation) :
+def generate_lc(diameter, separation, add_args_str) :
 
   image_filenames = get_filenames(images_path_label_entry.get())
   _, image_extension = os.path.splitext(image_filenames[0])
   image_postfix = images_name_postfix_label_entry.get().lstrip('_')
   frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_postfix, images_name_prefix_label_entry.get()])
   
-  print("diameter", diameter)
-  print("separation", separation)
+  expr = ast.parse(f"dict({add_args_str}\n)", mode="eval")
+  add_args = {kw.arg: ast.literal_eval(kw.value) for kw in expr.body.keywords}
+  print("add_args", add_args)
   print("frames shape:", frames.shape[0])
   pt_loc = pd.DataFrame()
   for tt in range(0, frames.shape[0]):
-    print(tt)
-    pt_loc_temp = tp.locate(frames[tt], diameter=diameter, separation=separation)
+    print('Locating stack: ', tt)
+    pt_loc_temp = tp.locate(frames[tt], diameter=diameter, separation=separation, **add_args)
     pt_loc_temp['frame'] = tt
     pt_loc = pd.concat([pt_loc_temp, pt_loc], ignore_index=True)
   
@@ -886,11 +891,14 @@ downsampling_label_entry.grid(row=4, column=1, sticky="ew")
 downsampling_end_label = Label(dic_settings_frame, text="px")
 downsampling_end_label.grid(row=4, column=2, sticky="ew")
 
-
-ignore_1st_layer_label = Label(dic_settings_frame, text="ignore 1st layer:")
-ignore_1st_layer_label.grid(row=5, column=0, sticky="ew")
-ignore_1st_layer_button = Button(dic_settings_frame, text=str(bool(buttons_vals[0])), command=change_ignore_1st_layer)
-ignore_1st_layer_button.grid(row=5, column=1, sticky="ew")
+calculate_layers1_label = Label(dic_settings_frame, text="calculate layers from:")
+calculate_layers1_label.grid(row=5, column=0, sticky="ew")
+calc_layers_from_entry = Entry(dic_settings_frame, width=5)
+calc_layers_from_entry.grid(row=5, column=1, sticky="ew")
+calculate_layers2_label = Label(dic_settings_frame, text="calculate layers to:")
+calculate_layers2_label.grid(row=5, column=2, sticky="ew")
+calc_layers_to_entry = Entry(dic_settings_frame, width=5)
+calc_layers_to_entry.grid(row=5, column=3, sticky="ew")
 
 threshold_label = Label(dic_settings_frame, text="coef threshold:")
 threshold_label.grid(row=6, column=0, sticky="ew")

@@ -28,11 +28,11 @@ struct DIC_3D_Input {
         settings_json.at("Downsampling").get_to(downsampling_factor);
         settings_json.at("Stack height").get_to(stack_h);
         settings_json.at("Image extension").get_to(image_extension);
-        int is_2d, is_backward, ignore1layer;
+        int is_2d, is_backward;
         settings_json.at("Is 2D").get_to(is_2d);
         settings_json.at("Is Backward").get_to(is_backward);
-        settings_json.at("Ignore first layer").get_to(ignore1layer);
-        is_2D_case = bool(is_2d); backward_calculation = bool(is_backward); ignore_1st_layer = bool(ignore1layer);
+        settings_json.at("layers to calculate").get_to(layers_to_calculate);
+        is_2D_case = bool(is_2d); backward_calculation = bool(is_backward);
         settings_json.at("coef threshold").get_to(coef_threshold);
         settings_json.at("delta coef threshold").get_to(delta_coef_threshold);
         settings_json.at("crack gradient threshold").get_to(gradient_threshold);
@@ -40,8 +40,7 @@ struct DIC_3D_Input {
         f.close();
 
         if (is_2D_case) {
-            ignore_1st_layer = false;
-            stack_h = 1;
+            stack_h = 0;
             z_bounce = 1;
             z_radius = 0;
             image_name_postfix = "";
@@ -63,8 +62,11 @@ struct DIC_3D_Input {
         os << "downsampling factor: " << downsampling_factor << std::endl;
         os << "stack height: " << stack_h << std::endl;
         os << "image extension: " << image_extension << std::endl;
-        os << "ignore 1st_layer: " << ignore_1st_layer << std::endl;
-        os << "backward calculation: " << backward_calculation << std::endl;
+        os << "layers to calculate: ";
+        for (size_t i = 0; i < layers_to_calculate.size(); ++i) {
+            os << layers_to_calculate[i] << " ";
+        }
+        os << "\n" << "backward calculation: " << backward_calculation << std::endl;
         os << "2D case: " << is_2D_case << std::endl;
         os << "coef threshold: " << coef_threshold << std::endl;
         os << "delta coef threshold: " << delta_coef_threshold << std::endl;
@@ -84,7 +86,7 @@ struct DIC_3D_Input {
     size_t downsampling_factor;
     size_t stack_h;
     std::string image_extension;
-    bool ignore_1st_layer;
+    std::vector<size_t> layers_to_calculate;
     bool backward_calculation;
     bool is_2D_case;
 

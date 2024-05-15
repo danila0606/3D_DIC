@@ -25,6 +25,7 @@ def load_array_from_file(path) :
   with open(path, 'r') as f:
     lines = f.readlines()
     for line in lines :
+      line = line.strip()
       vals =[float(j) for j in line.split(',')]
       arr_list.append(np.array(vals))
   
