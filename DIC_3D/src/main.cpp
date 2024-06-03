@@ -158,7 +158,7 @@ std::vector<std::vector<float>> Calculate_2D_disps(const DIC_3D_Input& dic_in, c
     auto ROI = Array2D<double>(img_size_y, img_size_x, 0.0);
     for (size_t j = dic_in.roi_xy_min[1]; j < dic_in.roi_xy_max[1]; ++j) {
         for (size_t i = dic_in.roi_xy_min[0]; i < dic_in.roi_xy_max[0]; ++i) {
-            ROI(dic_in.roi_xy_min[1] + j, dic_in.roi_xy_min[0] + i) = 1.0;
+            ROI(j, i) = 1.0;
         }
     }
 
@@ -245,16 +245,16 @@ int main(int argc, char *argv[]) {
 
     for (size_t idx = 0; idx < stack_times.size() - 1; idx++) {
 
-        size_t ref_image_stack_number = stack_times[idx];
-        size_t def_image_stack_number = stack_times[idx + 1];
-
         if (dic_in.is_2D_case) {
             threads[idx] = std::thread([&](size_t ind) {
+                size_t ref_image_stack_number = stack_times[ind];
+                size_t def_image_stack_number = stack_times[ind + 1];
+
                 std::vector<std::vector<float>> result_ref(subset_number, std::vector<float>(2, 0.));
 
                 for (size_t i = 0; i < s_y; ++i) {
                     for (size_t j = 0; j < s_x; ++j) {
-                        result_ref[i * s_y + s_x] = {static_cast<float>(dic_in.roi_xy_min[0] + dic_in.subset_offset * j + dic_in.subset_size / 2),
+                        result_ref[i * s_y + j] = {static_cast<float>(dic_in.roi_xy_min[0] + dic_in.subset_offset * j + dic_in.subset_size / 2),
                                                      static_cast<float>(dic_in.roi_xy_min[1] + dic_in.subset_offset * i + dic_in.subset_size / 2)};
                     }
                 }
@@ -263,7 +263,7 @@ int main(int argc, char *argv[]) {
                 auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + dic_in.image_extension;
 
                 printf("Processing 2D correlation between %d and %d images...\n", ref_image_stack_number, def_image_stack_number);
-                std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
+                auto start_corr = std::chrono::system_clock::now();
 
                 auto result_disps = Calculate_2D_disps(dic_in, ref_image_str, def_image_str, s_x, s_y);
                 auto result_def = result_ref;
@@ -274,8 +274,8 @@ int main(int argc, char *argv[]) {
                     result_def[p][1] += disp[1];
                 }
 
-                std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
-                std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
+                auto end_corr = std::chrono::system_clock::now();
+                auto elapsed_seconds_2stacks = end_corr - start_corr;
                 printf("Time spent: %f on images %d and %d.\n", elapsed_seconds_2stacks.count(), ref_image_stack_number, def_image_stack_number);
 
                 std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
@@ -300,6 +300,8 @@ int main(int argc, char *argv[]) {
         }
         else {
             threads[idx] = std::thread([&](size_t ind) {
+                size_t ref_image_stack_number = stack_times[ind];
+                size_t def_image_stack_number = stack_times[ind + 1];
                 
                 auto initial_z_guess = interesting_layers;
 
@@ -308,7 +310,7 @@ int main(int argc, char *argv[]) {
                 auto result_def = result_ref;
 
                 printf("Processing correlation between %d and %d stacks...\n", ref_image_stack_number, def_image_stack_number);
-                std::chrono::time_point<std::chrono::system_clock> start_corr = std::chrono::system_clock::now();
+                auto start_corr = std::chrono::system_clock::now();
                 
                 for (size_t i = 0; i < s_y; ++i) {
                     for (size_t p = 0; p < s_x; ++p) {
@@ -328,9 +330,7 @@ int main(int argc, char *argv[]) {
 
                         for (auto k : interesting_layers) {
                             std::stringstream ref_z_str;
-                            if (!dic_in.is_2D_case) {
-                                ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
-                            }
+                            ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
                             
                             auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
                             size_t k_bounced = k / dic_in.z_bounce;
@@ -357,9 +357,8 @@ int main(int argc, char *argv[]) {
 
                             for (int z = init_z; z <= search_z_max; ++z) {
                                 std::stringstream def_z_str;
-                                if (!dic_in.is_2D_case) {
-                                    def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
-                                }
+                                def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+
                                 auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
                                 auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
 
@@ -383,9 +382,8 @@ int main(int argc, char *argv[]) {
 
                             for (int z = init_z - 1; z >= search_z_min + 1; --z) {
                                 std::stringstream def_z_str;
-                                if (!dic_in.is_2D_case) {
-                                    def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
-                                }
+                                def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+
                                 auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
                                 auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
 
@@ -408,8 +406,8 @@ int main(int argc, char *argv[]) {
                     }
                 }
 
-                std::chrono::time_point<std::chrono::system_clock> end_corr = std::chrono::system_clock::now();
-                std::chrono::duration<double> elapsed_seconds_2stacks = end_corr - start_corr;
+                auto end_corr = std::chrono::system_clock::now();
+                auto elapsed_seconds_2stacks = end_corr - start_corr;
                 printf("Time spent: %f on stacks %d and %d.\n", elapsed_seconds_2stacks.count(), ref_image_stack_number, def_image_stack_number);
 
                 std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");

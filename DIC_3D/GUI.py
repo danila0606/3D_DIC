@@ -888,8 +888,6 @@ downsampling_label = Label(dic_settings_frame, text="downsampling:")
 downsampling_label.grid(row=4, column=0, sticky="ew")
 downsampling_label_entry = Entry(dic_settings_frame, width=5)
 downsampling_label_entry.grid(row=4, column=1, sticky="ew")
-downsampling_end_label = Label(dic_settings_frame, text="px")
-downsampling_end_label.grid(row=4, column=2, sticky="ew")
 
 calculate_layers1_label = Label(dic_settings_frame, text="calculate layers from:")
 calculate_layers1_label.grid(row=5, column=0, sticky="ew")
