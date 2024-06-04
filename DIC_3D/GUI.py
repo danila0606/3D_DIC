@@ -31,7 +31,6 @@ def change_case():
   else :
     button_text = "3D"
   case_value_button.config(text=button_text)
-#   update_GUI_fields()
 
 def change_disp():
   buttons_vals[3] = 1 - buttons_vals[3]
@@ -85,12 +84,6 @@ def load_dic_settings():
 
       dic_results_path_entry.delete(0, END)
       dic_results_path_entry.insert(END, json_dic_set['DIC Results'])
-
-      images_name_prefix_label_entry.delete(0, END)
-      images_name_prefix_label_entry.insert(END, json_dic_set['Images Time Prefix'])
-
-      images_name_postfix_label_entry.delete(0, END)
-      images_name_postfix_label_entry.insert(END, json_dic_set['Images Slice Postfix'])
       
       ROI_x_min_label_entry.delete(0, END)
       ROI_x_min_label_entry.insert(END, str(json_dic_set['ROI x min']))
@@ -165,12 +158,6 @@ def load_pt_settings():
       pt_results_path_entry.delete(0, END)
       pt_results_path_entry.insert(END, json_dic_set['PT Results'])
 
-      images_name_prefix_label_entry.delete(0, END)
-      images_name_prefix_label_entry.insert(END, json_dic_set['Images Time Prefix'])
-
-      images_name_postfix_label_entry.delete(0, END)
-      images_name_postfix_label_entry.insert(END, json_dic_set['Images Slice Postfix'])
-
       scale_x_size_label_entry.delete(0, END)
       scale_x_size_label_entry.insert(END, str(json_dic_set['Scale x']))
       scale_y_size_label_entry.delete(0, END)
@@ -239,9 +226,6 @@ def dic_save_settings():
   if(ROI_y_max_label_entry.get() == "") :
     show_error("ROI y_max is empty!")
     return
-  if(images_name_prefix_label_entry.get() == "") :
-    show_error("Images' name prefix is empty!")
-    return
   if(threshold_label_entry.get() == "") :
     show_error("coef threshold is empty!")
     return
@@ -253,8 +237,9 @@ def dic_save_settings():
     return
   
   image_filenames = get_filenames(images_path_label_entry.get())
+  image_name_prefix, image_name_postfix, image_time_zeros, image_slice_zeros = extract_prefix_postfix_zeros(image_filenames)
   _, image_extension = os.path.splitext(image_filenames[0])
-  times = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get())
+  times = find_numbers_in_filenames(image_filenames, image_name_prefix)
   times = sorted(times)
 
   image0 = cv2.imread(images_path_label_entry.get() + image_filenames[0])
@@ -266,11 +251,8 @@ def dic_save_settings():
     if(z_spacing_label_entry.get() == "") :
       show_error("z-spacing is empty!")
       return
-    if(images_name_postfix_label_entry.get() == "") :
-      show_error("Images' name postfix is empty!")
-      return
     
-    stack_hs = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get() + str(list(times)[0]) + images_name_postfix_label_entry.get())
+    stack_hs = find_numbers_in_filenames(image_filenames, image_name_prefix + str(list(times)[0]) + image_name_postfix)
     stack_h = max(list(stack_hs))
     z_spacing = int(z_spacing_label_entry.get())
     z_search = int(z_search_label_entry.get())
@@ -298,8 +280,10 @@ def dic_save_settings():
       "Z search": z_search, 
       "Images path": images_path_label_entry.get(), 
       "DIC Results": dic_results_path_entry.get(), 
-      "Images Time Prefix": images_name_prefix_label_entry.get(),   
-      "Images Slice Postfix": images_name_postfix_label_entry.get(), 
+      "Images Time Prefix": image_name_prefix,
+      "Images Time Zeros": image_time_zeros,    
+      "Images Slice Postfix": image_name_postfix,
+      "Images Slice Zeros": image_slice_zeros,
       "Times": times, 
       "ROI x min": int(ROI_x_min_label_entry.get()), 
       "ROI y min": int(ROI_y_min_label_entry.get()), 
@@ -348,16 +332,10 @@ def pt_save_settings():
   if(pt_search_range_label_entry.get() == "") :
     show_error("PT seacrh range is empty!")
     return
-  if(images_name_prefix_label_entry.get() == "") :
-    show_error("Images' name prefix is empty!")
-    return
   #if not 2D
   if not (buttons_vals[2]) :
     if(scale_z_size_label_entry.get() == "") :
       show_error("Scale z is empty!")
-      return
-    if(images_name_postfix_label_entry.get() == "") :
-      show_error("Images' name postfix is empty!")
       return
     scale_z = int(scale_z_size_label_entry.get())
   else :
@@ -370,8 +348,6 @@ def pt_save_settings():
       "DIC Results": dic_results_path_entry.get(),
       "Locations path": locations_path_entry.get(),
       "PT Results": pt_results_path_entry.get(),
-      "Images Time Prefix": images_name_prefix_label_entry.get(),   
-      "Images Slice Postfix": images_name_postfix_label_entry.get(),
       "Scale x": int(scale_x_size_label_entry.get()),
       "Scale y": int(scale_y_size_label_entry.get()),
       "Scale z": scale_z,
@@ -419,13 +395,11 @@ def show_disps_dic():
   if(subset_offset_label_entry.get() == "") :
     show_error("Subset offset is empty!")
     return
-  if(images_name_prefix_label_entry.get() == "") :
-    show_error("Images' name prefix is empty!")
-    return
   
   image_filenames = get_filenames(images_path_label_entry.get())
+  image_name_prefix, image_name_postfix, image_time_zeros, image_slice_zeros = extract_prefix_postfix_zeros(image_filenames)
   _, image_extension = os.path.splitext(image_filenames[0])
-  times = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get())
+  times = find_numbers_in_filenames(image_filenames, image_name_prefix)
   #if not 2D
   if not buttons_vals[2] :
     if(z_spacing_label_entry.get() == "") :
@@ -434,16 +408,13 @@ def show_disps_dic():
     if(show_z_label_entry.get() == "") :
       show_error("Select z to show!")
       return
-    if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 0) :
-      show_error("Images' name postfix is empty!")
-      return
-    stack_hs = find_numbers_in_filenames(image_filenames, images_name_prefix_label_entry.get() + str(list(times)[0]) + images_name_postfix_label_entry.get())
+    stack_hs = find_numbers_in_filenames(image_filenames, image_name_prefix + str(list(times)[0]) + image_name_postfix)
     stack_h = max(list(stack_hs))
     index_to_show = int(show_z_label_entry.get())
     z_bounce = int(z_spacing_label_entry.get())
     bounced_z_id = index_to_show // z_bounce
     s_z = len(range(0, stack_h, z_bounce))
-    ref_image_path = images_path_label_entry.get() + images_name_prefix_label_entry.get() + str(show_ref_time_label_entry.get()) + images_name_postfix_label_entry.get() + '{:03}'.format(int(show_z_label_entry.get())) + image_extension
+    ref_image_path = images_path_label_entry.get() + image_name_prefix + str(show_ref_time_label_entry.get()) + image_name_postfix + '{:03}'.format(int(show_z_label_entry.get())) + image_extension
     show_case = buttons_vals[3]
   else :
     stack_h = 1
@@ -451,7 +422,7 @@ def show_disps_dic():
     z_bounce = 1
     bounced_z_id = 0
     s_z = 1
-    ref_image_path = images_path_label_entry.get() + images_name_prefix_label_entry.get() + str(show_ref_time_label_entry.get()) + image_extension
+    ref_image_path = images_path_label_entry.get() + image_name_postfix + str(show_ref_time_label_entry.get()) + image_extension
     show_case = 0
 
   subset_size, subset_offset = int(subset_size_label_entry.get()), int(subset_offset_label_entry.get())
@@ -486,10 +457,6 @@ def show_disps_pt():
   if(show_def_time_label_entry.get() == "") :
     show_error("Select def time to show!")
     return
-  if(images_name_prefix_label_entry.get() == "") :
-    show_error("Images' time prefix is empty!")
-    return
-  #if not 2D
   
   results_filenames = get_filenames(pt_results_path_entry.get())
 
@@ -509,25 +476,23 @@ def show_disps_pt():
   scale_y = float(scale_y_size_label_entry.get()) # um / pixel
 
   image_filenames = get_filenames(images_path_label_entry.get())
+  image_name_prefix, image_name_postfix, image_time_zeros, image_slice_zeros = extract_prefix_postfix_zeros(image_filenames)
   _, image_extension = os.path.splitext(image_filenames[0])
   if not buttons_vals[2] :
     if(show_z_label_entry.get() == "") :
       show_error("Select z to show!")
       return
-    if(images_name_postfix_label_entry.get() == "" and buttons_vals[2] != 0) :
-      show_error("Images' name postfix is empty!")
-      return
+    
     X0_img = F0[['x', 'y', 'z']].to_numpy()
     X1_img = F1[['x', 'y', 'z']].to_numpy()
-    image_postfix = images_name_postfix_label_entry.get().lstrip('_')
-    frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_postfix, images_name_prefix_label_entry.get()])
+    frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_name_postfix.lstrip('_'), image_name_prefix])
     frames.bundle_axes = ['x', 'y', 'z']
     px_to_um = np.array([scale_x, scale_y, float(scale_z_size_label_entry.get())])
     show_component = buttons_vals[3] + 1 # y or z
   else :
     X0_img = F0[['x', 'y']].to_numpy()
     X1_img = F1[['x', 'y']].to_numpy()
-    frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [images_name_prefix_label_entry.get()])
+    frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_name_prefix])
     frames.bundle_axes = ['x', 'y']
     px_to_um = np.array([scale_x, scale_y])
     show_component = 1 # y
@@ -612,9 +577,9 @@ def generate_locations_window() :
 def generate_lc(diameter, separation, add_args_str) :
 
   image_filenames = get_filenames(images_path_label_entry.get())
+  image_name_prefix, image_name_postfix, image_time_zeros, image_slice_zeros = extract_prefix_postfix_zeros(image_filenames)
   _, image_extension = os.path.splitext(image_filenames[0])
-  image_postfix = images_name_postfix_label_entry.get().lstrip('_')
-  frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_postfix, images_name_prefix_label_entry.get()])
+  frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_name_postfix.lstrip('_'), image_name_prefix])
   
   expr = ast.parse(f"dict({add_args_str}\n)", mode="eval")
   add_args = {kw.arg: ast.literal_eval(kw.value) for kw in expr.body.keywords}
@@ -646,9 +611,9 @@ def run_pt():
   # TODO add support of 2D PT
 
   image_filenames = get_filenames(images_path_label_entry.get())
+  image_name_prefix, image_name_postfix, image_time_zeros, image_slice_zeros = extract_prefix_postfix_zeros(image_filenames)
   _, image_extension = os.path.splitext(image_filenames[0])
-  image_postfix = images_name_postfix_label_entry.get().lstrip('_')
-  frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_postfix, images_name_prefix_label_entry.get()])
+  frames = pims.ImageSequenceND(images_path_label_entry.get()+'*'+ image_extension, axes_identifiers = [image_name_postfix.lstrip('_'), image_name_prefix])
   
   if (buttons_vals[2]) :
     frames.bundle_axes = ['x', 'y']
@@ -1007,17 +972,6 @@ ROI_y_max_label = Label(ROI_frame, text="y_max:")
 ROI_y_max_label.grid(row=0, column=7, sticky="ew")
 ROI_y_max_label_entry = Entry(ROI_frame, width=5)
 ROI_y_max_label_entry.grid(row=0, column=8, sticky="ew")
-
-images_name_prefix_label = Label(images_name_settings_frame, text="Image time prefix:")
-images_name_prefix_label.grid(row=0, column=0, sticky="ew")
-images_name_prefix_label_entry = Entry(images_name_settings_frame, width=7)
-images_name_prefix_label_entry.grid(row=0, column=1, sticky="ew")
-images_name_postfix_label = Label(images_name_settings_frame, text="Image slice postfix:")
-images_name_postfix_label.grid(row=0, column=2, sticky="ew")
-images_name_postfix_label_entry = Entry(images_name_settings_frame, width=7)
-images_name_postfix_label_entry.grid(row=0, column=3, sticky="ew")
-
-
 
 # Run the main loop
 root.mainloop()

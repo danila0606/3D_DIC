@@ -67,6 +67,73 @@ def get_filenames(path):
     print(f"Error: Directory '{path}' not found.")
     return []
   
+def extract_prefix_postfix_zeros(filenames):
+    if not filenames:
+        return None, None, None, None
+
+    sample_filename = filenames[0]
+    prefix = ''
+    postfix = ''
+    time_part = ''
+    slice_part = ''
+    
+    prefix_found = False
+    postfix_started = False
+    
+    for char in sample_filename:
+        if char == '.' :
+           break
+        if not char.isdigit():
+            if not prefix_found:
+                prefix += char
+            else:
+                postfix += char
+                postfix_started = True
+        else :
+            if not prefix_found:
+                prefix_found = True
+
+    # Function to extract numbers from the filenames
+    def extract_numbers(filename):
+        match = re.match(prefix + r"(\d+)" + postfix + r"(\d+)", filename)
+        if match:
+            return int(match.group(1)), int(match.group(2))
+        return float('inf'), float('inf')  # Return large numbers if the format does not match
+
+    # Sort filenames using the extracted numbers as keys
+    sorted_filenames = sorted(filenames, key=extract_numbers)
+    sample_filename = sorted_filenames[0]
+
+    prefix_found = False
+    postfix_started = False
+    for char in sample_filename:
+        if char == '.' :
+           break
+        if not char.isdigit():
+            if not prefix_found:
+              continue
+            else:
+                postfix_started = True
+        else :
+            if not prefix_found:
+                prefix_found = True
+            if not postfix_started:
+                time_part += char
+            else:
+                slice_part += char
+
+    # Calculate the number of leading zeros in the numeric parts
+    num_zeros_time = len(time_part) - len(time_part.lstrip('0'))
+    num_zeros_slice = len(slice_part) - len(slice_part.lstrip('0'))
+
+    if len(time_part) == 1 :
+      num_zeros_time = 0
+    if len(slice_part) == 1 :
+      slice_part = 0
+
+    return prefix, postfix, num_zeros_time, num_zeros_slice
+   
+  
 def sort_by_postfix(filenames):
   """
   Sorts a list of filenames by the postfix before the extension.

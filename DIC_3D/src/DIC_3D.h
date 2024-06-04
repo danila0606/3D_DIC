@@ -19,7 +19,9 @@ struct DIC_3D_Input {
         settings_json.at("Images path").get_to(images_folder);
         settings_json.at("DIC Results").get_to(output_folder);
         settings_json.at("Images Time Prefix").get_to(image_name_prefix);
+        settings_json.at("Images Time Zeros").get_to(time_leading_zeros);
         settings_json.at("Images Slice Postfix").get_to(image_name_postfix);
+        settings_json.at("Images Slice Zeros").get_to(slice_leading_zeros);
         settings_json.at("Times").get_to(times);
         settings_json.at("ROI x min").get_to(roi_xy_min[0]);
         settings_json.at("ROI y min").get_to(roi_xy_min[1]);
@@ -44,6 +46,7 @@ struct DIC_3D_Input {
             z_bounce = 1;
             z_radius = 0;
             image_name_postfix = "";
+            slice_leading_zeros = 0;
         }
     };
 
@@ -54,6 +57,7 @@ struct DIC_3D_Input {
         os << "images folder: " << images_folder << std::endl;
         os << "outputmfolder: " << output_folder << std::endl;
         os << "image name prefix: " << image_name_prefix << " ,image name postfix: " << image_name_postfix << std::endl;
+        os << "time leading zeros: " << time_leading_zeros << " ,slice leading zeros: " << slice_leading_zeros << std::endl;
         os << "times: ";
         for (size_t i = 0; i < times.size(); ++i) {
             os << times[i] << " ";
@@ -81,6 +85,7 @@ struct DIC_3D_Input {
     std::string images_folder;
     std::string output_folder;
     std::string image_name_prefix, image_name_postfix;
+    size_t time_leading_zeros, slice_leading_zeros;
     std::vector<size_t> times;
     std::array<size_t, 2> roi_xy_min, roi_xy_max;
     size_t downsampling_factor;

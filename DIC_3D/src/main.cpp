@@ -258,9 +258,12 @@ int main(int argc, char *argv[]) {
                                                      static_cast<float>(dic_in.roi_xy_min[1] + dic_in.subset_offset * i + dic_in.subset_size / 2)};
                     }
                 }
-
-                auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + dic_in.image_extension;
-                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + dic_in.image_extension;
+                std::stringstream ref_t_str;
+                ref_t_str << std::setw(dic_in.time_leading_zeros) << std::setfill('0') << std::setw(dic_in.time_leading_zeros) << ref_image_stack_number;
+                auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + ref_t_str.str() + dic_in.image_name_postfix + dic_in.image_extension;
+                std::stringstream def_t_str;
+                def_t_str << std::setw(dic_in.time_leading_zeros) << std::setfill('0') << std::setw(dic_in.time_leading_zeros) << def_image_stack_number;
+                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + dic_in.image_extension;
 
                 printf("Processing 2D correlation between %d and %d images...\n", ref_image_stack_number, def_image_stack_number);
                 auto start_corr = std::chrono::system_clock::now();
@@ -301,7 +304,11 @@ int main(int argc, char *argv[]) {
         else {
             threads[idx] = std::thread([&](size_t ind) {
                 size_t ref_image_stack_number = stack_times[ind];
+                std::stringstream ref_t_str;
+                ref_t_str << std::setw(dic_in.time_leading_zeros) << std::setfill('0') << std::setw(dic_in.time_leading_zeros) << ref_image_stack_number;
                 size_t def_image_stack_number = stack_times[ind + 1];
+                std::stringstream def_t_str;
+                def_t_str << std::setw(dic_in.time_leading_zeros) << std::setfill('0') << std::setw(dic_in.time_leading_zeros) << def_image_stack_number;
                 
                 auto initial_z_guess = interesting_layers;
 
@@ -330,9 +337,9 @@ int main(int argc, char *argv[]) {
 
                         for (auto k : interesting_layers) {
                             std::stringstream ref_z_str;
-                            ref_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << k;
+                            ref_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << k;
                             
-                            auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(ref_image_stack_number) + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
+                            auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + ref_t_str.str() + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
                             size_t k_bounced = k / dic_in.z_bounce;
 
                             result_ref[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0]), static_cast<float>(subset_center[1]), static_cast<float>(k)};
@@ -357,9 +364,9 @@ int main(int argc, char *argv[]) {
 
                             for (int z = init_z; z <= search_z_max; ++z) {
                                 std::stringstream def_z_str;
-                                def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                                def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
 
-                                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
+                                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
                                 auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
 
                                 if (res.coef <= best_coef) {
@@ -382,9 +389,9 @@ int main(int argc, char *argv[]) {
 
                             for (int z = init_z - 1; z >= search_z_min + 1; --z) {
                                 std::stringstream def_z_str;
-                                def_z_str << std::setw(3) << std::setfill('0') << std::setw(3) << z;
+                                def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
 
-                                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + std::to_string(def_image_stack_number) + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
+                                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
                                 auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
 
                                 if (res.coef <= best_coef) {
