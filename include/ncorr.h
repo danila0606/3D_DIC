@@ -100,7 +100,7 @@ namespace details {
             
             // Additional Constructors ---------------------------------------//         
             // Note: params = {p1, p2, v, u, dv_dp1, dv_dp2, du_dp1, du_dp2, corr_coef, diff_norm}
-            subregion_nloptimizer(const Array2D<double>&, const Array2D<double>&, const ROI2D&, difference_type, INTERP, SUBREGION, difference_type);
+            subregion_nloptimizer(const Array2D<double>&, const Array2D<double>&, const ROI2D&, difference_type, INTERP, SUBREGION, difference_type, std::pair<bool, std::vector<float>>);
                          
         private:      
             // Arithmetic operations -----------------------------------------//
@@ -133,6 +133,8 @@ namespace details {
             mutable Array2D<double>::linsolver hess_linsolver;         // Have copy 
             // Cur template buffer
             mutable Array2D<double> A_cur_template;                    // Have copy 
+
+            std::pair<bool, std::vector<float>> initial_guess_uv;
     };        
 }
 
@@ -152,7 +154,7 @@ struct DIC_analysis_input final {
     typedef ROI2D::difference_type                              difference_type;
         
     // Rule of 5 and destructor ----------------------------------------------//    
-    DIC_analysis_input() : scalefactor(), interp_type(), subregion_type(), r(), num_threads(), cutoff_corrcoef(), update_corrcoef(), prctile_corrcoef(), debug() { }
+    DIC_analysis_input() : scalefactor(), interp_type(), subregion_type(), r(), num_threads(), cutoff_corrcoef(), update_corrcoef(), prctile_corrcoef(), debug(), initial_guess_uv() { }
     DIC_analysis_input(const DIC_analysis_input&) = default;
     DIC_analysis_input(DIC_analysis_input&&) = default;
     DIC_analysis_input& operator=(const DIC_analysis_input&) = default;
@@ -170,7 +172,9 @@ struct DIC_analysis_input final {
                        double cutoff_corrcoef,
                        double update_corrcoef,
                        double prctile_corrcoef,
-                       bool debug) : imgs(imgs),
+                       bool debug,
+                       std::pair<bool, std::vector<float>> initial_guess_uv) : 
+                                     imgs(imgs),
                                      roi(roi),
                                      scalefactor(scalefactor),
                                      interp_type(interp_type),
@@ -180,9 +184,10 @@ struct DIC_analysis_input final {
                                      cutoff_corrcoef(cutoff_corrcoef), 
                                      update_corrcoef(update_corrcoef),
                                      prctile_corrcoef(prctile_corrcoef), 
-                                     debug(debug) { }    
+                                     debug(debug),
+                                     initial_guess_uv(initial_guess_uv) { }    
     
-    DIC_analysis_input(const std::vector<Image2D>&, const ROI2D&, difference_type, INTERP, SUBREGION, difference_type, difference_type, DIC_analysis_config, bool);
+    DIC_analysis_input(const std::vector<Image2D>&, const ROI2D&, difference_type, INTERP, SUBREGION, difference_type, difference_type, DIC_analysis_config, bool, std::pair<bool, std::vector<float>>);
         
     // Static factory methods ------------------------------------------------//
     static DIC_analysis_input load(std::ifstream&);
@@ -203,6 +208,7 @@ struct DIC_analysis_input final {
     double update_corrcoef;
     double prctile_corrcoef;
     bool debug;
+    std::pair<bool, std::vector<float>> initial_guess_uv;
 };
 
 enum class PERSPECTIVE { EULERIAN, LAGRANGIAN };

@@ -76,7 +76,7 @@ float calculateAverageGradient(const std::vector<float>& image, int width, int h
 }
 
 SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& ref_image, 
-                                const std::string& def_image, std::array<size_t, 2> s_xy_min) {
+                                const std::string& def_image, std::array<size_t, 2> s_xy_min, const std::pair<bool, std::vector<float>>& initial_guess_uv) {
 
     std::vector<Image2D> imgs;
     imgs.push_back(ref_image);
@@ -110,7 +110,8 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
 					       dic_in.subset_size,            // Subregion radius
 					       1,                                         		// # of threads
 					       DIC_analysis_config::NO_UPDATE,// DIC configuration for reference image updates
-					       false);//true);				  // Debugging enabled/disabled
+					       false,// Debugging enabled/disabled
+                           initial_guess_uv);			  
 
 	// Perform DIC_analysis    
 	auto DIC_output = DIC_analysis(DIC_input);
@@ -171,7 +172,8 @@ std::vector<std::vector<float>> Calculate_2D_disps(const DIC_3D_Input& dic_in, c
 					    dic_in.subset_size,            // Subregion radius
 					    1,                                         		// # of threads
 					    DIC_analysis_config::NO_UPDATE,// DIC configuration for reference image updates
-					    false);//true);				  // Debugging enabled/disabled
+					    false,
+                        std::make_pair<bool, std::vector<float>>(false, {0.0, 0.0}));//true);				  // Debugging enabled/disabled
     
     auto DIC_output = DIC_analysis(DIC_input);
 
@@ -277,9 +279,9 @@ int main(int argc, char *argv[]) {
                     result_def[p][1] += disp[1];
                 }
 
-                auto end_corr = std::chrono::system_clock::now();
-                auto elapsed_seconds_2stacks = end_corr - start_corr;
-                printf("Time spent: %f on images %d and %d.\n", elapsed_seconds_2stacks.count(), ref_image_stack_number, def_image_stack_number);
+                const auto end_corr = std::chrono::system_clock::now();
+                std::chrono::duration<double> elapsed_seconds_2stacks = (end_corr - start_corr);
+                printf("Time spent: %fs on stacks %zu and %zu.\n", elapsed_seconds_2stacks.count(), ref_image_stack_number, def_image_stack_number);
 
                 std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
                 if (!out_file_ref.is_open()) {
@@ -303,21 +305,22 @@ int main(int argc, char *argv[]) {
         }
         else {
             threads[idx] = std::thread([&](size_t ind) {
-                size_t ref_image_stack_number = stack_times[ind];
+                const size_t ref_image_stack_number = stack_times[ind];
                 std::stringstream ref_t_str;
                 ref_t_str << std::setw(dic_in.time_leading_zeros) << std::setfill('0') << std::setw(dic_in.time_leading_zeros) << ref_image_stack_number;
-                size_t def_image_stack_number = stack_times[ind + 1];
+                const size_t def_image_stack_number = stack_times[ind + 1];
                 std::stringstream def_t_str;
                 def_t_str << std::setw(dic_in.time_leading_zeros) << std::setfill('0') << std::setw(dic_in.time_leading_zeros) << def_image_stack_number;
                 
                 auto initial_z_guess = interesting_layers;
+                std::vector<std::pair<bool, std::vector<float>>> initial_uv_guess(initial_z_guess.size(), {false, {0.0, 0.0}});
 
                 std::vector<float> result_coefs(s_z * subset_number, size_t(-1));
                 std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
                 auto result_def = result_ref;
 
                 printf("Processing correlation between %d and %d stacks...\n", ref_image_stack_number, def_image_stack_number);
-                auto start_corr = std::chrono::system_clock::now();
+                const auto start_corr = std::chrono::system_clock::now();
                 
                 for (size_t i = 0; i < s_y; ++i) {
                     for (size_t p = 0; p < s_x; ++p) {
@@ -350,6 +353,7 @@ int main(int argc, char *argv[]) {
                             }
 
                             int init_z = initial_z_guess[k_bounced];
+                            auto init_uv = initial_uv_guess[k_bounced];
                             int search_z_min = k - dic_in.z_radius;
                             if (search_z_min < 0)
                                 search_z_min = 0;
@@ -367,7 +371,7 @@ int main(int argc, char *argv[]) {
                                 def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
 
                                 auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
-                                auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
+                                auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min, init_uv);
 
                                 if (res.coef <= best_coef) {
                                     best_u = res.u;
@@ -384,6 +388,7 @@ int main(int argc, char *argv[]) {
                                 result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
                                 result_coefs[xyz_table_start + k_bounced] = best_coef;
                                 initial_z_guess[k_bounced] = best_z;
+                                initial_uv_guess[k_bounced] = {true, {best_v, best_u}};
                                 continue;
                             }
 
@@ -392,7 +397,7 @@ int main(int argc, char *argv[]) {
                                 def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
 
                                 auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
-                                auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min);
+                                auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min, init_uv);
 
                                 if (res.coef <= best_coef) {
                                     best_u = res.u;
@@ -408,14 +413,15 @@ int main(int argc, char *argv[]) {
                             result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
                             result_coefs[xyz_table_start + k_bounced] = best_coef;
                             initial_z_guess[k_bounced] = best_z;
+                            initial_uv_guess[k_bounced] = (best_coef < dic_in.coef_threshold) ? std::make_pair<bool, std::vector<float>>(true, {best_v, best_u}) : std::make_pair<bool, std::vector<float>>(false, {0.0, 0.0});
                         }
 
                     }
                 }
 
-                auto end_corr = std::chrono::system_clock::now();
-                auto elapsed_seconds_2stacks = end_corr - start_corr;
-                printf("Time spent: %f on stacks %d and %d.\n", elapsed_seconds_2stacks.count(), ref_image_stack_number, def_image_stack_number);
+                const auto end_corr = std::chrono::system_clock::now();
+                std::chrono::duration<double> elapsed_seconds_2stacks = (end_corr - start_corr);
+                printf("Time spent: %fs on stacks %zu and %zu.\n", elapsed_seconds_2stacks.count(), ref_image_stack_number, def_image_stack_number);
 
                 std::ofstream out_file_ref(dic_in.output_folder + "ref_" + std::to_string(ref_image_stack_number) + "_" + std::to_string(def_image_stack_number) + ".txt");
                 if (!out_file_ref.is_open()) {

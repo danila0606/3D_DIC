@@ -156,7 +156,7 @@ namespace details {
         return false;
     }
     
-    subregion_nloptimizer::subregion_nloptimizer(const Array2D<double> &A_ref, const Array2D<double> &A_cur, const ROI2D &roi, difference_type scalefactor, INTERP interp_type, SUBREGION subregion_type, difference_type r) : 
+    subregion_nloptimizer::subregion_nloptimizer(const Array2D<double> &A_ref, const Array2D<double> &A_cur, const ROI2D &roi, difference_type scalefactor, INTERP interp_type, SUBREGION subregion_type, difference_type r, std::pair<bool, std::vector<float>> initial_guess_uv) : 
         nloptimizer_base(6, 10), 
         A_ref_ptr(std::make_shared<Array2D<double>>(A_ref)), 
         A_cur_ptr(std::make_shared<Array2D<double>>(A_cur)), 
@@ -176,7 +176,8 @@ namespace details {
         A_dref_dv_dp2(2*r+1,2*r+1),
         A_dref_du_dp1(2*r+1,2*r+1),
         A_dref_du_dp2(2*r+1,2*r+1),
-        A_cur_template(2*r+1,2*r+1) { 
+        A_cur_template(2*r+1,2*r+1),
+        initial_guess_uv(initial_guess_uv) { 
         if (A_cur_ptr->height() < 2*r+1 || A_cur_ptr->width() < 2*r+1) {
             // A_cur must be larger than the ref template for cross correlation
             // function used in initial guess. 
@@ -206,7 +207,13 @@ namespace details {
         }
     }
     
-    bool subregion_nloptimizer::initial_guess() const {     
+    bool subregion_nloptimizer::initial_guess() const {  
+        if (initial_guess_uv.first) {
+            params(2) = initial_guess_uv.second[0]; // v
+            params(3) = initial_guess_uv.second[1]; // u
+
+            return true;
+        }   
         // Perform (slightly modified) JP Lewis NCC for initial guess.        
         // Note: params = {p1, p2, v, u, dv_dp1, dv_dp2, du_dp1, du_dp2, corr_coef, diff_norm}
         
@@ -1532,6 +1539,9 @@ namespace details {
             // Must scale seed position
             region_seeds = std::move(region_seeds) * scalefactor; 
         }
+        // std::cout << "redundant_seeds.size(): " << redundant_seeds.size() << std::endl;
+        // std::cout << "redundant_seeds.array.size(): " << redundant_seeds[0](0) << " : " << redundant_seeds[0](1) << std::endl;
+        // std::cout << "A_ap.size(): " << A_ap.size() << std::endl;
                         
         // Cycle over regions and perform RGDIC.
         Array2D<double> params_buf(10, 1); // buffer for nloptimizer
@@ -1591,7 +1601,8 @@ std::pair<Disp2D, Data2D> RGDIC(const Array2D<double> &A_ref,
                                 ROI2D::difference_type r, 
                                 ROI2D::difference_type num_threads,
                                 double cutoff_corrcoef,                
-                                bool debug) { 
+                                bool debug,
+                                std::pair<bool, std::vector<float>> initial_guess_uv) { 
     typedef ROI2D::difference_type                              difference_type;
             
     if (!A_ref.same_size(A_cur)) {
@@ -1641,7 +1652,7 @@ std::pair<Disp2D, Data2D> RGDIC(const Array2D<double> &A_ref,
     auto partition_diagram = details::get_ROI_partition_diagram(roi_reduced, num_threads);
             
     // Get subregion nonlinear optimizer
-    auto sr_nloptimizer = details::subregion_nloptimizer(A_ref, A_cur, roi, scalefactor, interp_type, subregion_type, r);
+    auto sr_nloptimizer = details::subregion_nloptimizer(A_ref, A_cur, roi, scalefactor, interp_type, subregion_type, r, initial_guess_uv);
     
     // Initialize displacement and correlation coefficient arrays
     Array2D<double> A_v(roi_reduced.height(), roi_reduced.width());
@@ -1776,14 +1787,16 @@ DIC_analysis_input::DIC_analysis_input(const std::vector<Image2D> &imgs,
                                        ROI2D::difference_type r,
                                        ROI2D::difference_type num_threads,
                                        DIC_analysis_config config_type,
-                                       bool debug) : imgs(imgs),
+                                       bool debug,
+                                       std::pair<bool, std::vector<float>> initial_guess_uv = std::make_pair<bool, std::vector<float>>(false, {0.0, 0.0})) : imgs(imgs),
                                                      roi(roi),
                                                      scalefactor(scalefactor),
                                                      interp_type(interp_type),
                                                      subregion_type(subregion_type), 
                                                      r(r), 
                                                      num_threads(num_threads), 
-                                                     debug(debug) {         
+                                                     debug(debug), 
+                                                     initial_guess_uv(initial_guess_uv) {         
     // Set parameters to some preset configuration
     switch (config_type) {
         case DIC_analysis_config::NO_UPDATE :
@@ -2027,9 +2040,9 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
         // -------------------------------------------------------------------//
         // Perform RGDIC -----------------------------------------------------//
         // -------------------------------------------------------------------//
-        // std::cout << std::endl << "Processing displacement field " << cur_idx << " of " << DIC_input.imgs.size() - 1 << "." << std::endl;
-        // std::cout << "Reference image: " << DIC_input.imgs[ref_idx] << "." << std::endl;
-        // std::cout << "Current image: " << DIC_input.imgs[cur_idx] << "." << std::endl;
+        std::cout << std::endl << "Processing displacement field " << cur_idx << " of " << DIC_input.imgs.size() - 1 << "." << std::endl;
+        std::cout << "Reference image: " << DIC_input.imgs[ref_idx] << "." << std::endl;
+        std::cout << "Current image: " << DIC_input.imgs[cur_idx] << "." << std::endl;
         
         std::chrono::time_point<std::chrono::system_clock> start_rgdic = std::chrono::system_clock::now();
         
@@ -2042,7 +2055,8 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
                                DIC_input.r, 
                                DIC_input.num_threads,
                                DIC_input.cutoff_corrcoef,
-                               DIC_input.debug);
+                               DIC_input.debug,
+                               DIC_input.initial_guess_uv);
         
         // std::chrono::time_point<std::chrono::system_clock> end_rgdic = std::chrono::system_clock::now();
         // std::chrono::duration<double> elapsed_seconds_rgdic = end_rgdic - start_rgdic;
@@ -2066,7 +2080,7 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
         Array2D<double> cc_values = disp_pair.second.get_array()(disp_pair.second.get_roi().get_mask());
         if (!cc_values.empty()) {
             DIC_output.corr_coef = prctile(cc_values, DIC_input.prctile_corrcoef);
-            // std::cout << "Selected correlation coefficient value: " << DIC_output.corr_coef << ". Correlation coefficient update value: " << DIC_input.update_corrcoef << "." << std::endl;
+            std::cout << "Selected correlation coefficient value: " << DIC_output.corr_coef << ". Correlation coefficient update value: " << DIC_input.update_corrcoef << "." << std::endl;
             if (DIC_output.corr_coef > DIC_input.update_corrcoef) {
                 // Update the reference image index as well as the reference roi
                 ref_idx = cur_idx;
@@ -2078,7 +2092,7 @@ DIC_analysis_output DIC_analysis(const DIC_analysis_input &DIC_input) {
     // End timer for entire analysis
     std::chrono::time_point<std::chrono::system_clock> end_analysis = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds_analysis = end_analysis - start_analysis;
-    // std::cout << std::endl << "Total DIC analysis time: " << elapsed_seconds_analysis.count() << "." << std::endl;
+    std::cout << std::endl << "Total DIC analysis time: " << elapsed_seconds_analysis.count() << "." << std::endl;
 
     return DIC_output;
 }
