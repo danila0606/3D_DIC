@@ -14,7 +14,7 @@ if (APPLE)
 endif()
 
 # Add executable
-ADD_EXECUTABLE(DIC_3D ../src/main.cpp)
+ADD_EXECUTABLE(DIC_3D ../src/main.cpp ../src/DIC_3D.cpp)
 
 set_property(TARGET DIC_3D PROPERTY CXX_STANDARD 11)
 set_property(TARGET DIC_3D PROPERTY CXX_STANDARD_REQUIRED ON)

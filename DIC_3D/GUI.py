@@ -13,8 +13,8 @@ import json
 root = Tk()
 root.title("3D DIC")
 
-# ignore_1st_layer, calculation_order, 2D_or_3D, show_uv_or_z, show_dic_or_pt
-buttons_vals = [0, 0, 0, 0, 0]
+# ignore_1st_layer, calculation_order, 2D_or_3D, show_uv_or_z, show_dic_or_pt, calculation_path
+buttons_vals = [0, 0, 0, 0, 0, 0]
 
 def change_backward():
   buttons_vals[1] = 1 - buttons_vals[1]
@@ -23,6 +23,19 @@ def change_backward():
   else :
     button_text = "Forward"
   backward_value_button.config(text=button_text)
+
+def change_calc_path():
+  buttons_vals[5] += 1
+  if buttons_vals[5] > 2 :
+    buttons_vals[5] = 0
+
+  if (buttons_vals[5] == 0) :
+    button_text = "Snake Right Top"
+  elif (buttons_vals[5] == 1):
+    button_text = "From Right to Left"
+  else :
+    button_text = "From Top to Bottom"
+  calc_path_value_button.config(text=button_text)
 
 def change_case():
   buttons_vals[2] = 1 - buttons_vals[2]
@@ -119,6 +132,15 @@ def load_dic_settings():
       else :
         button_text = "3D"
       case_value_button.config(text=button_text)
+
+      buttons_vals[5] = int(json_dic_set['Calculation Path'])
+      if (buttons_vals[5] == 0) :
+        button_text = "Snake Right Top"
+      elif (buttons_vals[5] == 1):
+        button_text = "From Right to Left"
+      else :
+        button_text = "From Top to Bottom"
+      calc_path_value_button.config(text=button_text)
 
       # if 2D
       if (buttons_vals[2]) :
@@ -293,7 +315,8 @@ def dic_save_settings():
       "Stack height": int(stack_h), 
       "Image extension": image_extension, 
       "Is 2D" : int(buttons_vals[2]), 
-      "Is Backward" : int(buttons_vals[1]), 
+      "Is Backward" : int(buttons_vals[1]),
+      "Calculation Path": int(buttons_vals[5]),
       "layers to calculate" : layers_to_calculate,
       "coef threshold" : float(threshold_label_entry.get()),
       "delta coef threshold" : float(delta_threshold_label_entry.get()),
@@ -890,6 +913,11 @@ backward_value_label = Label(buttons_frame, text="Calculation:")
 backward_value_label.grid(row=1, column=0, sticky="ew")
 backward_value_button = Button(buttons_frame, text="Forward", command=change_backward)
 backward_value_button.grid(row=1, column=1, sticky="ew")
+
+calc_path_value_label = Label(buttons_frame, text="Calculation Path:")
+calc_path_value_label.grid(row=2, column=0, sticky="ew")
+calc_path_value_button = Button(buttons_frame, text="Snake Right Top", command=change_calc_path)
+calc_path_value_button.grid(row=2, column=1, sticky="ew")
 
 # PT
 scale_size_label = Label(pt_settings_name_frame, text="Scale ")

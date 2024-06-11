@@ -75,7 +75,7 @@ float calculateAverageGradient(const std::vector<float>& image, int width, int h
   return sum / numPixels;
 }
 
-SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& ref_image, 
+SubsetCorr CalculateSubsetDisp (const DIC3D::Input& dic_in, const std::string& ref_image, 
                                 const std::string& def_image, std::array<size_t, 2> s_xy_min, const std::pair<bool, std::vector<float>>& initial_guess_uv) {
 
     std::vector<Image2D> imgs;
@@ -144,7 +144,7 @@ SubsetCorr CalculateSubsetDisp (const DIC_3D_Input& dic_in, const std::string& r
     return res;
 }
 
-std::vector<std::vector<float>> Calculate_2D_disps(const DIC_3D_Input& dic_in, const std::string& ref_image, 
+std::vector<std::vector<float>> Calculate_2D_disps(const DIC3D::Input& dic_in, const std::string& ref_image, 
                                 const std::string& def_image, size_t s_x, size_t s_y)
 {
 
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
 		throw std::invalid_argument("Must have 1 arg: DIC setting file!");	
 	}
 
-	DIC_3D_Input dic_in(argv[1]);
+	DIC3D::Input dic_in(argv[1]);
 	dic_in.debug_print(std::cout);
 
     const float bad_coef = 1e6;
@@ -267,7 +267,7 @@ int main(int argc, char *argv[]) {
                 def_t_str << std::setw(dic_in.time_leading_zeros) << std::setfill('0') << std::setw(dic_in.time_leading_zeros) << def_image_stack_number;
                 auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + dic_in.image_extension;
 
-                printf("Processing 2D correlation between %d and %d images...\n", ref_image_stack_number, def_image_stack_number);
+                printf("Processing 2D correlation between %zu and %zu images...\n", ref_image_stack_number, def_image_stack_number);
                 auto start_corr = std::chrono::system_clock::now();
 
                 auto result_disps = Calculate_2D_disps(dic_in, ref_image_str, def_image_str, s_x, s_y);
@@ -319,104 +319,120 @@ int main(int argc, char *argv[]) {
                 std::vector<std::vector<float>> result_ref(s_z * subset_number, std::vector<float>(3, 0.));
                 auto result_def = result_ref;
 
-                printf("Processing correlation between %d and %d stacks...\n", ref_image_stack_number, def_image_stack_number);
+                printf("Processing correlation between %zu and %zu stacks...\n", ref_image_stack_number, def_image_stack_number);
                 const auto start_corr = std::chrono::system_clock::now();
+
+                DIC3D::SubsetMap subset_map;
+                auto calc_path = DIC3D::GenerateCalculationPath(dic_in.path_type, s_x, s_y, s_z, subset_map);
                 
-                for (size_t i = 0; i < s_y; ++i) {
-                    for (size_t p = 0; p < s_x; ++p) {
-                        size_t j = p;
-                        if (i % 2 == 0)
-                            j = s_x - p - 1;
+                for (const auto& s_loc : calc_path) {
 
-                        std::array<size_t, 2> s_xy_min;
-                        s_xy_min[0] = dic_in.roi_xy_min[0] + dic_in.subset_offset * j;
-                        s_xy_min[1] = dic_in.roi_xy_min[1] + dic_in.subset_offset * i;
+                    std::array<size_t, 2> s_xy_min;
+                    s_xy_min[0] = dic_in.roi_xy_min[0] + dic_in.subset_offset * s_loc.x;
+                    s_xy_min[1] = dic_in.roi_xy_min[1] + dic_in.subset_offset * s_loc.y;
 
-                        std::array<size_t, 2> subset_center;
-                        subset_center[0] = s_xy_min[0] + dic_in.subset_size / 2;
-                        subset_center[1] = s_xy_min[1] + dic_in.subset_size / 2;
+                    std::array<size_t, 2> subset_center;
+                    subset_center[0] = s_xy_min[0] + dic_in.subset_size / 2;
+                    subset_center[1] = s_xy_min[1] + dic_in.subset_size / 2;
 
-                        size_t xyz_table_start = i * (s_x * s_z) + j * s_z;
+                    size_t xyz_table_start = s_loc.y * (s_x * s_z) + s_loc.x * s_z;
 
-                        for (auto k : interesting_layers) {
-                            std::stringstream ref_z_str;
-                            ref_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << k;
-                            
-                            auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + ref_t_str.str() + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
-                            size_t k_bounced = k / dic_in.z_bounce;
+                    for (auto k : interesting_layers) {
+                        std::stringstream ref_z_str;
+                        ref_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << k;
+                        
+                        const auto ref_image_str = dic_in.images_folder + dic_in.image_name_prefix + ref_t_str.str() + dic_in.image_name_postfix + ref_z_str.str() + dic_in.image_extension;
+                        const size_t k_bounced = k / dic_in.z_bounce;
 
-                            result_ref[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0]), static_cast<float>(subset_center[1]), static_cast<float>(k)};
-                            if (std::find(dic_in.layers_to_calculate.begin(), dic_in.layers_to_calculate.end(), k) == dic_in.layers_to_calculate.end()) {
-                                result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
-                                result_coefs[xyz_table_start + k_bounced] = bad_coef;
-                                continue;
-                            }
+                        auto& subset_info = subset_map[s_loc.x][s_loc.y][k_bounced];
 
-                            int init_z = initial_z_guess[k_bounced];
-                            auto init_uv = initial_uv_guess[k_bounced];
-                            int search_z_min = k - dic_in.z_radius;
-                            if (search_z_min < 0)
-                                search_z_min = 0;
-
-                            int search_z_max = k + dic_in.z_radius;
-                            if (search_z_max > dic_in.stack_h)
-                                search_z_max = dic_in.stack_h;
-
-                            float best_coef = bad_coef;
-                            float best_u = 0., best_v = 0.;
-                            int best_z = init_z;
-
-                            for (int z = init_z; z <= search_z_max; ++z) {
-                                std::stringstream def_z_str;
-                                def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
-
-                                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
-                                auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min, init_uv);
-
-                                if (res.coef <= best_coef) {
-                                    best_u = res.u;
-                                    best_v = res.v;
-                                    best_coef = res.coef;
-                                    best_z = z;
-                                }
-                                else if ((best_coef < dic_in.coef_threshold) && (res.coef - best_coef > dic_in.delta_coef_threshold)) {
-                                    break; 
-                                }
-                            }
-
-                            if ((best_z > init_z || (init_z - 1) < 0) & (best_coef < dic_in.coef_threshold)) {
-                                result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
-                                result_coefs[xyz_table_start + k_bounced] = best_coef;
-                                initial_z_guess[k_bounced] = best_z;
-                                initial_uv_guess[k_bounced] = {true, {best_v, best_u}};
-                                continue;
-                            }
-
-                            for (int z = init_z - 1; z >= search_z_min + 1; --z) {
-                                std::stringstream def_z_str;
-                                def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
-
-                                auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
-                                auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min, init_uv);
-
-                                if (res.coef <= best_coef) {
-                                    best_u = res.u;
-                                    best_v = res.v;
-                                    best_coef = res.coef;
-                                    best_z = z;
-                                }
-                                else if ((best_coef < dic_in.coef_threshold) && (res.coef - best_coef > dic_in.delta_coef_threshold)) {
-                                    break;
-                                }
-                            }
-
-                            result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
-                            result_coefs[xyz_table_start + k_bounced] = best_coef;
-                            initial_z_guess[k_bounced] = best_z;
-                            initial_uv_guess[k_bounced] = (best_coef < dic_in.coef_threshold) ? std::make_pair<bool, std::vector<float>>(true, {best_v, best_u}) : std::make_pair<bool, std::vector<float>>(false, {0.0, 0.0});
+                        result_ref[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0]), static_cast<float>(subset_center[1]), static_cast<float>(k)};
+                        if (std::find(dic_in.layers_to_calculate.begin(), dic_in.layers_to_calculate.end(), k) == dic_in.layers_to_calculate.end()) {
+                            result_def[xyz_table_start + k_bounced] = result_ref[xyz_table_start + k_bounced];
+                            result_coefs[xyz_table_start + k_bounced] = bad_coef;
+                            continue;
                         }
 
+                        int init_z = k;
+                        std::pair<bool, std::vector<float>> init_uv = std::make_pair<bool, std::vector<float>>(false, {0.0, 0.0});
+                        if (subset_info.use_init) {
+                            const auto& guess_subset = subset_map[subset_info.init_x][subset_info.init_y][k_bounced];
+                            if (guess_subset.complete) {
+                                init_z = guess_subset.z;
+                                init_uv = std::make_pair<bool, std::vector<float>>(true, {guess_subset.v, guess_subset.u});
+                            }
+                        }
+
+                        int search_z_min = k - dic_in.z_radius;
+                        if (search_z_min < 0)
+                            search_z_min = 0;
+
+                        int search_z_max = k + dic_in.z_radius;
+                        if (search_z_max > dic_in.stack_h)
+                            search_z_max = dic_in.stack_h;
+
+                        float best_coef = bad_coef;
+                        float best_u = 0., best_v = 0.;
+                        int best_z = init_z;
+
+                        for (int z = init_z; z <= search_z_max; ++z) {
+                            std::stringstream def_z_str;
+                            def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
+
+                            auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
+                            auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min, init_uv);
+
+                            if (res.coef <= best_coef) {
+                                best_u = res.u;
+                                best_v = res.v;
+                                best_coef = res.coef;
+                                best_z = z;
+                            }
+                            else if ((best_coef < dic_in.coef_threshold) && (res.coef - best_coef > dic_in.delta_coef_threshold)) {
+                                break; 
+                            }
+                        }
+
+                        if ((best_z > init_z || (init_z - 1) < 0) & (best_coef < dic_in.coef_threshold)) {
+                            result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
+                            result_coefs[xyz_table_start + k_bounced] = best_coef;
+                            {
+                                subset_info.u = best_u;
+                                subset_info.v = best_v;
+                                subset_info.z = best_z;
+                                subset_info.complete = true;
+                            }
+                            continue;
+                        }
+
+                        for (int z = init_z - 1; z >= search_z_min + 1; --z) {
+                            std::stringstream def_z_str;
+                            def_z_str << std::setw(dic_in.slice_leading_zeros) << std::setfill('0') << std::setw(dic_in.slice_leading_zeros) << z;
+
+                            auto def_image_str = dic_in.images_folder + dic_in.image_name_prefix + def_t_str.str() + dic_in.image_name_postfix + def_z_str.str() + dic_in.image_extension;
+                            auto res = CalculateSubsetDisp(dic_in, ref_image_str, def_image_str, s_xy_min, init_uv);
+
+                            if (res.coef <= best_coef) {
+                                best_u = res.u;
+                                best_v = res.v;
+                                best_coef = res.coef;
+                                best_z = z;
+                            }
+                            else if ((best_coef < dic_in.coef_threshold) && (res.coef - best_coef > dic_in.delta_coef_threshold)) {
+                                break;
+                            }
+                        }
+
+                        result_def[xyz_table_start + k_bounced] = {static_cast<float>(subset_center[0] + best_u), static_cast<float>(subset_center[1] + best_v), static_cast<float>(best_z)};
+                        result_coefs[xyz_table_start + k_bounced] = best_coef;
+                        {
+                            subset_info.u = best_u;
+                            subset_info.v = best_v;
+                            subset_info.z = best_z;
+                            subset_info.complete = (best_coef < dic_in.coef_threshold);
+                        }
                     }
+
                 }
 
                 const auto end_corr = std::chrono::system_clock::now();
