@@ -156,7 +156,11 @@ def draw_image_uv_disps(image_path, points_ref, points_def, show_disp, scale = 1
     
     assert (points_ref.shape) == (points_def.shape), 'The shape of reference points array must be the same as the shape of deformed points array!'
     
-    image = cv2.imread(image_path)
+    _, image_extension = os.path.splitext(image_path)
+    if (image_extension == '.tif') :
+      image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    else :
+      image = cv2.imread(image_path)
 	
     if text is not None :
         image = cv2.putText(image, text, (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),4)
@@ -196,6 +200,8 @@ def draw_image_uv_disps(image_path, points_ref, points_def, show_disp, scale = 1
     orig_aspect_ratio = image.shape[1] / image.shape[0]
 
     resized_image = cv2.resize(orig_image, (int(1200 * orig_aspect_ratio), 1200), interpolation = cv2.INTER_LINEAR)
+    if (image_extension == '.tif') :
+      resized_image = cv2.convertScaleAbs(resized_image)
 
     canvas = Canvas(img_window, width = 1200 * orig_aspect_ratio, height = 1200, bg = "#000000")
     image_tk = ImageTk.PhotoImage(master = canvas, image=Image.fromarray(resized_image))

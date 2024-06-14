@@ -88,7 +88,9 @@ SubsetCorr CalculateSubsetDisp (const DIC3D::Input& dic_in, const std::string& r
 
     auto aver_grad = calculateAverageGradient(ref_vec, img_size_x, img_size_y, s_xy_min[0], s_xy_min[1], s_xy_min[0] + dic_in.subset_size, s_xy_min[1] + dic_in.subset_size);
 
-    if (aver_grad < dic_in.gradient_threshold) {
+    float grad_threshold = (dic_in.image_extension == ".tif") ? 1e-7 : dic_in.gradient_threshold;
+
+    if (aver_grad < grad_threshold) {
         SubsetCorr res;
         res.skipped = true;
         return res;
