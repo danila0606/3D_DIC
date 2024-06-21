@@ -8,6 +8,7 @@ PROJECT(DIC_3D)
 # Set output for executable
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 
+# crutch
 if (APPLE)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /opt/homebrew/include")
 	INCLUDE_DIRECTORIES(/usr/local/include/)

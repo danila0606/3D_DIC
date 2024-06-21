@@ -43,7 +43,7 @@ namespace DIC3D {
                             info.init_y = y;
                         }
                     }
-                    path.emplace_back(CalcUnit{x, y});
+                    path.emplace_back(CalcUnit{static_cast<size_t>(x), y});
                     for (size_t z = 0; z < s_z; ++z) {
                         subset_map[x][y][z] = info;
                     }

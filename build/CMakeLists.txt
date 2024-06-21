@@ -14,6 +14,12 @@ SET(ncorr_h ../include/ncorr.h ../include/Strain2D.h ../include/Disp2D.h ../incl
 # Set include directory
 INCLUDE_DIRECTORIES(../include)
 
+# crutch
+if (APPLE)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /opt/homebrew/include")
+	INCLUDE_DIRECTORIES(/usr/local/include/)
+endif()
+
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 # target_link_libraries(ncorr ${OpenCV_LIBS})
