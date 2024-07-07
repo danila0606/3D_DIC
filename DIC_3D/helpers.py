@@ -155,7 +155,6 @@ def sort_by_postfix(filenames):
 def draw_image_uv_disps(image_path, points_ref, points_def, show_disp, scale = 1., text = None, filename = None) :
     
     assert (points_ref.shape) == (points_def.shape), 'The shape of reference points array must be the same as the shape of deformed points array!'
-    
     _, image_extension = os.path.splitext(image_path)
     if (image_extension == '.tif') :
       image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
@@ -169,7 +168,6 @@ def draw_image_uv_disps(image_path, points_ref, points_def, show_disp, scale = 1
       for i, pt0_z in enumerate(points_ref[:, 2]):
           pt1_z = points_def[:, 2][i]
           if np.isnan(pt0_z)==False and np.isnan(pt1_z)==False :
-              print("points_ref[i, 0]", points_ref[i, 0])
               x = int(points_ref[i, 0]) #int
               y = int(points_ref[i, 1])
               deltat_z = int(pt1_z - pt0_z)

@@ -274,7 +274,7 @@ def dic_save_settings():
       show_error("z-spacing is empty!")
       return
     
-    stack_hs = find_numbers_in_filenames(image_filenames, image_name_prefix + str(list(times)[0]) + image_name_postfix)
+    stack_hs = find_numbers_in_filenames(image_filenames, image_name_prefix + str(list(times)[0]).zfill(image_time_zeros) + image_name_postfix)
     stack_h = max(list(stack_hs))
     z_spacing = int(z_spacing_label_entry.get())
     z_search = int(z_search_label_entry.get())
@@ -431,13 +431,13 @@ def show_disps_dic():
     if(show_z_label_entry.get() == "") :
       show_error("Select z to show!")
       return
-    stack_hs = find_numbers_in_filenames(image_filenames, image_name_prefix + str(list(times)[0]) + image_name_postfix)
+    stack_hs = find_numbers_in_filenames(image_filenames, image_name_prefix + str(list(times)[0]).zfill(image_time_zeros) + image_name_postfix)
     stack_h = max(list(stack_hs))
     index_to_show = int(show_z_label_entry.get())
     z_bounce = int(z_spacing_label_entry.get())
     bounced_z_id = index_to_show // z_bounce
     s_z = len(range(0, stack_h, z_bounce))
-    ref_image_path = images_path_label_entry.get() + image_name_prefix + str(show_ref_time_label_entry.get()) + image_name_postfix + '{:03}'.format(int(show_z_label_entry.get())) + image_extension
+    ref_image_path = images_path_label_entry.get() + image_name_prefix + str(show_ref_time_label_entry.get()).zfill(image_time_zeros) + image_name_postfix + show_z_label_entry.get().zfill(image_slice_zeros) + image_extension
     show_case = buttons_vals[3]
   else :
     stack_h = 1
@@ -445,7 +445,7 @@ def show_disps_dic():
     z_bounce = 1
     bounced_z_id = 0
     s_z = 1
-    ref_image_path = images_path_label_entry.get() + image_name_postfix + str(show_ref_time_label_entry.get()) + image_extension
+    ref_image_path = images_path_label_entry.get() + image_name_prefix + str(show_ref_time_label_entry.get()).zfill(image_time_zeros) + image_name_postfix + image_extension
     show_case = 0
 
   subset_size, subset_offset = int(subset_size_label_entry.get()), int(subset_offset_label_entry.get())
