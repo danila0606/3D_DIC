@@ -157,7 +157,8 @@ def draw_image_uv_disps(image_path, points_ref, points_def, show_disp, scale = 1
     assert (points_ref.shape) == (points_def.shape), 'The shape of reference points array must be the same as the shape of deformed points array!'
     _, image_extension = os.path.splitext(image_path)
     if (image_extension == '.tif') :
-      image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+      # image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+      image = cv2.imread(image_path, cv2.IMREAD_ANYCOLOR)
     else :
       image = cv2.imread(image_path)
 	
