@@ -104,15 +104,15 @@ SubsetCorr CalculateSubsetDisp (const DIC3D::Input& dic_in, const std::string& r
     }
 
     auto DIC_input = DIC_analysis_input(
-                            imgs, 						  // Images
-				            ROI2D(ROI > 0.5),		      // ROI
+                           imgs, 						  // Images
+				           ROI2D(ROI > 0.5),		      // ROI
 					       dic_in.downsampling_factor,    // scalefactor
 					       INTERP::CUBIC_KEYS_PRECOMPUTE, // Interpolation
 					       SUBREGION::SQUARE,			  // Subregion shape
 					       dic_in.subset_size,            // Subregion radius
 					       1,                                         		// # of threads
 					       DIC_analysis_config::NO_UPDATE,// DIC configuration for reference image updates
-					       false,// Debugging enabled/disabled
+					       false,
                            initial_guess_uv);			  
 
 	// Perform DIC_analysis    
@@ -175,7 +175,7 @@ std::vector<std::vector<float>> Calculate_2D_disps(const DIC3D::Input& dic_in, c
 					    1,                                         		// # of threads
 					    DIC_analysis_config::NO_UPDATE,// DIC configuration for reference image updates
 					    false,
-                        std::make_pair<bool, std::vector<float>>(false, {0.0, 0.0}));//true);				  // Debugging enabled/disabled
+                        std::make_pair<bool, std::vector<float>>(false, {0.0, 0.0}));
     
     auto DIC_output = DIC_analysis(DIC_input);
 
@@ -210,7 +210,7 @@ std::vector<std::vector<float>> Calculate_2D_disps(const DIC3D::Input& dic_in, c
             u_aver /= win_size * win_size;
             v_aver /= win_size * win_size;
 
-            averaged_disps[i * s_y + s_x] = {u_aver, v_aver};
+            averaged_disps[i * s_y + j] = {u_aver, v_aver};
         }
     }
 
@@ -250,6 +250,7 @@ int main(int argc, char *argv[]) {
     for (size_t idx = 0; idx < stack_times.size() - 1; idx++) {
 
         if (dic_in.is_2D_case) {
+
             threads[idx] = std::thread([&](size_t ind) {
                 size_t ref_image_stack_number = stack_times[ind];
                 size_t def_image_stack_number = stack_times[ind + 1];
